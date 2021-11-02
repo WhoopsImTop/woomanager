@@ -152,6 +152,12 @@ export default {
     return {
       links: [
         {
+          name: "Startseite",
+          to: "/",
+          icon: "./static/home.svg",
+          active: true,
+        }, 
+        {
           name: "Statistiken",
           to: "/stats",
           icon: "./static/analytics.svg",
@@ -161,7 +167,7 @@ export default {
           name: "Bestellungen",
           to: "/orders",
           icon: "./static/receipt.svg",
-          active: true,
+          active: false,
         },
         {
           name: "Produkte",
@@ -176,6 +182,12 @@ export default {
           active: true,
         },
         {
+          name: "Schlagwörter",
+          to: "/tags",
+          icon: "./static/tags.svg",
+          active: true,
+        },
+        {
           name: "Scan Liste",
           to: "/scans",
           icon: "./static/list.svg",
@@ -185,6 +197,12 @@ export default {
           name: "Scanner",
           to: "/scanner",
           icon: "./static/scan.svg",
+          active: true,
+        },
+        {
+          name: "Scan Liste",
+          to: "/list",
+          icon: "./static/list.svg",
           active: true,
         }
       ],
@@ -204,6 +222,64 @@ export default {
     }
   },
   methods: {
+    getData() {
+      this.$store.state.loading = true
+      axios
+      .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=1`)
+      .then(res => {
+        let page = res.headers["x-wp-totalpages"]
+        for(let i = 1; i < page - 1; i++) {
+          axios
+          .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=${i}`)
+          .then(res => {
+            for(let x = 0; x < res.data.length; x++) {
+              this.$store.state.products.push(res.data[x])
+              if(res.data[x].stock_quantity <= 0) {
+                this.$store.state.outOfStock.push(res.data[x])
+              }
+            }
+          })
+          .then(this.$store.state.loading = false)
+        }
+      })
+      .catch((e) => {
+        console.log(e)
+      })
+      axios
+      .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/categories/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=1`)
+      .then(res => {
+        let page = res.headers["x-wp-totalpages"]
+        for(let i = 1; i < page - 1; i++) {
+          axios
+          .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/categories/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=${i}`)
+          .then(res => {
+            for(let x = 0; x < res.data.length; x++) {
+              this.$store.state.categories.push(res.data[x])
+            }
+          })
+        }
+      })
+      .catch((e) => {
+        console.log(e)
+      })
+      axios
+      .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/tags/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=1`)
+      .then(res => {
+        let page = res.headers["x-wp-totalpages"]
+        for(let i = 1; i < page - 1; i++) {
+          axios
+          .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/tags/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=${i}`)
+          .then(res => {
+            for(let x = 0; x < res.data.length; x++) {
+              this.$store.state.tags.push(res.data[x])
+            }
+          })
+        }
+      })
+      .catch((e) => {
+        console.log(e)
+      })
+    },
     CheckConnection() {
       this.btnLoading = true
       axios
@@ -211,7 +287,7 @@ export default {
       .then(res => {
         if(res.status == 200) {
           localStorage.setItem("ck", this.customerKey);
-          localStorage.setItem('cs', this.customerSecret);
+          localStorage.setItem("cs", this.customerSecret);
           localStorage.setItem("shopURL", this.shopURL);
           this.btnLoading = false
           this.btnText = "Erfolgreich verbunden"
@@ -225,6 +301,12 @@ export default {
         console.log(e)
       })
     }
+  },
+  created() {
+    this.getData()
+    window.addEventListener('reset', () => {
+      window.alert("Achtung du willst die Seite neu laden. Dann müssen alle Produkte wieder geladen werden")
+    })
   }
 }
 </script>
@@ -261,6 +343,50 @@ export default {
   width: 70px !important;
   border-radius: 5px !important;
   background: rgba( 66, 66, 87, 0.35 ) !important;
+  backdrop-filter: blur( 9px ) !important;
+  -webkit-backdrop-filter: blur( 9px ) !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba( 255, 255, 255, 0.18 ) !important;
+  padding: 0px 15px !important;
+  color: #c3c3ce !important;
+  z-index: 0 !important;
+}
+
+.btn {
+  background: rgba( 66, 66, 87, 0.35 ) !important;
+  backdrop-filter: blur( 9px ) !important;
+  -webkit-backdrop-filter: blur( 9px ) !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba( 255, 255, 255, 0.18 ) !important;
+  padding: 0px 15px !important;
+  color: #c3c3ce !important;
+  z-index: 0 !important;
+}
+
+.glass {
+  background: rgba( 66, 66, 87, 0.35 ) !important;
+  backdrop-filter: blur( 9px ) !important;
+  -webkit-backdrop-filter: blur( 9px ) !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba( 255, 255, 255, 0.18 ) !important;
+  padding: 0px 15px !important;
+  color: #efefef !important;
+  z-index: 0 !important;
+}
+
+.glass2 {
+  background: rgba( 66, 66, 87, 0.8 ) !important;
+  backdrop-filter: blur( 9px ) !important;
+  -webkit-backdrop-filter: blur( 9px ) !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba( 255, 255, 255, 0.18 ) !important;
+  padding: 0px 15px !important;
+  color: #efefef !important;
+  z-index: 0 !important;
+}
+
+.btn-danger {
+  background: rgba(158, 35, 64, 0.35) !important;
   backdrop-filter: blur( 9px ) !important;
   -webkit-backdrop-filter: blur( 9px ) !important;
   border-radius: 10px !important;
