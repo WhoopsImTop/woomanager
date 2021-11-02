@@ -1,5 +1,33 @@
 <template>
   <v-app dark>
+
+    <v-dialog
+      dark
+      class="glass2"
+      v-model="settingDialog"
+      max-width="400px"
+    >
+      <v-card>
+        <v-card-title>Einstellungen</v-card-title>
+        <v-divider></v-divider>
+        <v-list
+      flat
+    >
+      <v-subheader>Navigation</v-subheader>
+        <v-list-item v-for="(link, i) in links" :key="i">
+            <v-list-item-title>{{ link.name }}</v-list-item-title>
+          <v-list-item-action>
+            <v-checkbox v-model="link.active"></v-checkbox>
+          </v-list-item-action>
+        </v-list-item>
+      </v-list>
+      <v-card-actions>
+        <v-btn text @click="settingDialog=false">Schließen</v-btn>
+        <v-btn text @click="settingDialog=false">Speichern</v-btn>
+      </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-app-bar class="top-bar" app>
       <v-toolbar-title><a style="color:#c3c3ce; text-decoration: none" :href="`https://` + getSiteName" target="_blank">{{ getSiteName }}</a></v-toolbar-title>
         <v-spacer></v-spacer>
@@ -41,6 +69,7 @@
                 icon
                 link
                 dark
+                @click="settingDialog=true"
                 v-bind="attrs"
                 v-on="on"
               >
@@ -188,6 +217,7 @@ export default {
           active: true,
         }
       ],
+      settingDialog: false,
       customerKey: "",
       customerSecret: "",
       shopURL: "",
