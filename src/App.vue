@@ -1,12 +1,71 @@
 <template>
   <v-app dark>
+
+    <v-dialog 
+     persistent
+     max-width="285px"
+     dark 
+     v-model="updateExists"
+     >
+      <v-card class="glass2">
+        <v-card-title>
+          <span class="headline">Update verfügbar!</span>
+        </v-card-title>
+        <v-card-text>
+          <v-btn color="accent"> Update Installieren </v-btn>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog
+      dark
+      v-model="settingDialog"
+      max-width="600px"
+    >
+      <v-card 
+      class="glass2"
+      >
+        <v-card-title>Einstellungen</v-card-title>
+        <v-divider></v-divider>
+          <v-container>
+            <v-checkbox 
+            v-for="(link, i) in links" :key="i"
+            v-model="link.active">
+              <template v-slot:label>
+                <div>
+                  {{ link.name }}
+                </div>
+              </template>
+            </v-checkbox>
+            <v-checkbox 
+            v-model="workTimeRecording">
+              <template v-slot:label>
+                <div>
+                  Zeiterfassung
+                </div>
+              </template>
+            </v-checkbox>
+          </v-container>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn text @click="settingDialog=false">Schließen</v-btn>
+            <v-btn text @click="SaveDialogSettings()">Speichern</v-btn>
+          </v-card-actions>
+          </v-card>
+        </v-dialog>
+
     <v-app-bar class="top-bar" app>
       <v-toolbar-title><a style="color:#c3c3ce; text-decoration: none" :href="`https://` + getSiteName" target="_blank">{{ getSiteName }}</a></v-toolbar-title>
         <v-spacer></v-spacer>
-          <v-avatar
-            color="gray"
-            size="36"
-          ></v-avatar>
+          <v-chip
+            v-show="workTimeRecording" 
+            dark 
+            class="glass2"
+            >
+            <v-icon small class="mr-4">mdi-clock-outline</v-icon>
+            <span>{{ workTimePassed }}</span>
+            <v-icon @click="startTimeRecording" small class="ml-4">{{ timeRecordingStatus }}</v-icon>
+          </v-chip>
     </v-app-bar>
 
     <v-navigation-drawer
@@ -41,6 +100,7 @@
                 icon
                 link
                 dark
+                @click="settingDialog=true"
                 v-bind="attrs"
                 v-on="on"
               >
@@ -157,12 +217,12 @@ export default {
           icon: "./static/home.svg",
           active: true,
         }, 
-        {
-          name: "Statistiken",
-          to: "/stats",
-          icon: "./static/analytics.svg",
-          active: false,
-        }, 
+        //{
+        //  name: "Statistiken",
+        //  to: "/stats",
+        //  icon: "./static/analytics.svg",
+        //  active: false,
+        //}, 
         {
           name: "Bestellungen",
           to: "/orders",
@@ -188,12 +248,6 @@ export default {
           active: true,
         },
         {
-          name: "Scan Liste",
-          to: "/scans",
-          icon: "./static/list.svg",
-          active: false,
-        },
-        {
           name: "Scanner",
           to: "/scanner",
           icon: "./static/scan.svg",
@@ -206,11 +260,20 @@ export default {
           active: true,
         }
       ],
+      workTimeRecording: false,
+      settingDialog: false,
+      timeRecording: false,
       customerKey: "",
       customerSecret: "",
       shopURL: "",
       btnLoading: false,
-      btnText: "Onlineshop verbinden"
+      btnText: "Onlineshop verbinden",
+      startTime: null,
+      endTime: null,
+      totalTime: 0.00,
+      refreshing: false,
+      registration: null,
+      updateExists: true,
     }
   },
   computed: {
@@ -219,27 +282,66 @@ export default {
     },
     secrets() {
       return localStorage.getItem('ck') ? false : true
+    },
+    timeRecordingStatus() {
+      if(this.timeRecording) {
+        return "mdi-pause"
+      } else {
+        return "mdi-play"
+      }
+    },
+    workTimePassed() {
+        return this.totalTime.toFixed(0);
     }
   },
   methods: {
-    getData() {
-      this.$store.state.loading = true
+    showRefreshUI (e) {
+      this.registration = e.detail;
+      this.updateExists = true;
+    },
+    refreshApp () {
+      this.updateExists = false;
+      if (!this.registration || !this.registration.waiting) { return; }
+      this.registration.waiting.postMessage('skipWaiting');
+    },
+    startTimeRecording() {
+      this.timeRecording = !this.timeRecording
+      if(this.timeRecording){
+        this.startTime = new Date()
+        this.startTimer()
+      } else {
+        this.endTime = new Date()
+        this.totalTime = this.endTime - this.startTime
+      }
+    },
+    startTimer() {
+      this.totalTime = (new Date() - this.startTime) / 1000
+      if(this.timeRecording) {
+        setTimeout(() => {
+          this.startTimer()
+        }, 1000)
+      }
+    },
+    SaveDialogSettings() {
+      localStorage.setItem('nav', JSON.stringify(this.links))
+      this.settingDialog = false
+    },
+    async getData() {
       axios
       .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=1`)
       .then(res => {
         let page = res.headers["x-wp-totalpages"]
-        for(let i = 1; i < page - 1; i++) {
+        for(let i = 1; i <= page - 1; i++) {
           axios
           .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=${i}`)
           .then(res => {
             for(let x = 0; x < res.data.length; x++) {
               this.$store.state.products.push(res.data[x])
-              if(res.data[x].stock_quantity <= 0) {
+              if(res.data[x].stock_quantity <= 0 && res.data[x].manage_stock == true && res.data[x].name != "") {
                 this.$store.state.outOfStock.push(res.data[x])
               }
             }
           })
-          .then(this.$store.state.loading = false)
         }
       })
       .catch((e) => {
@@ -249,7 +351,7 @@ export default {
       .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/categories/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=1`)
       .then(res => {
         let page = res.headers["x-wp-totalpages"]
-        for(let i = 1; i < page - 1; i++) {
+        for(let i = 1; i <= page - 1; i++) {
           axios
           .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/categories/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=${i}`)
           .then(res => {
@@ -266,7 +368,7 @@ export default {
       .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/tags/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=1`)
       .then(res => {
         let page = res.headers["x-wp-totalpages"]
-        for(let i = 1; i < page - 1; i++) {
+        for(let i = 1; i <= page - 1; i++) {
           axios
           .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/tags/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=${i}`)
           .then(res => {
@@ -275,6 +377,14 @@ export default {
             }
           })
         }
+      })
+      .catch((e) => {
+        console.log(e)
+      })
+      axios
+      .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/orders/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}`)
+      .then(res => {
+        this.$store.state.orders = res.data
       })
       .catch((e) => {
         console.log(e)
@@ -297,6 +407,7 @@ export default {
         }
       })
       .catch((e) => {
+        this.btnLoading = false
         this.btnText = "Keine verbindung möglich"
         console.log(e)
       })
@@ -304,9 +415,27 @@ export default {
   },
   created() {
     this.getData()
-    window.addEventListener('reset', () => {
+    if(localStorage.getItem('nav')) {
+      this.links = JSON.parse(localStorage.getItem('nav'))
+    }
+    window.addEventListener('unload', () => {
       window.alert("Achtung du willst die Seite neu laden. Dann müssen alle Produkte wieder geladen werden")
     })
+    this.refreshApp(),
+    document.addEventListener(
+    'swUpdated', this.showRefreshUI, { once: true }
+    );
+    if (navigator.serviceWorker) {  
+      navigator.serviceWorker.addEventListener(
+        'controllerchange', () => {
+          if (this.refreshing) return;
+          this.refreshing = true;
+          window.location.reload();
+          localStorage.removeItem('auth-token')
+          localStorage.removeItem('UserID')
+        }
+      );
+    }
   }
 }
 </script>
@@ -333,7 +462,6 @@ export default {
   padding: 0px 15px !important;
   color: #c3c3ce !important
 }
-
 
 .left-bar {
   position: fixed !important;
@@ -397,6 +525,7 @@ export default {
 }
 
 .content-container {
+  overflow-y: scroll !important;
   position: fixed;
   right: 13px;
   top: 90px;

@@ -6,6 +6,7 @@ import BarcodeScanner from '../views/Scans.vue'
 import Category from '../views/Category.vue'
 import Tags from '../views/Tags.vue'
 import List from '../views/List.vue'
+import Orders from '../views/Orders.vue'
 
 Vue.use(VueRouter)
 
@@ -39,6 +40,11 @@ const routes = [
     path: '/list',
     name: 'List',
     component: List
+  },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: Orders
   },
 ]
 

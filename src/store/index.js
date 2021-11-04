@@ -9,7 +9,10 @@ export default new Vuex.Store({
     outOfStock: [],
     categories: [],
     tags: [],
-    loading: false,
+    loading: true,
+    timeToday: [],
+    orders: [],
+    selectedScans: []
   },
   mutations: {
   },
