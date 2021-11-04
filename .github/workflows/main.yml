@@ -23,6 +23,6 @@ jobs:
       with:
         server: www460.your-server.de
         username: bindis
-        password: ${{ secrets_password }}
+        password: ${{ secrets.password }}
         localDir: './dist/'
         serverDir: '.public_html/woomanager'
