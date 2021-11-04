@@ -25,4 +25,4 @@ jobs:
         username: bindis
         password: ${{ secrets.password }}
         local-dir: './dist/'
-        server-dir: '.public_html/woomanager'
+        server-dir: '.public_html/woomanager/'
