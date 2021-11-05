@@ -55,6 +55,7 @@
         <v-col v-show="selectedFields.includes('Bestand')" cols="4">
           <v-text-field
             outlined
+            type="number"
             label="Bestandsfilter"
             v-model="stockFilter"
             dark
@@ -69,6 +70,7 @@
           dark
           class="glass"
           @click="ExportSold"
+          :loading="loading"
           >
             <v-icon class="mr-5">mdi-download</v-icon>
             Liste herunterladen
@@ -87,8 +89,9 @@ export default {
       filename: '',
       selectedFields: [],
       categorieFilter: [],
+      loading: false,
       tagFilter: [],
-      stockFilter: null,
+      stockFilter: 999,
       productFields: [
         "Produktname",
         "Preis",
@@ -112,7 +115,7 @@ export default {
     }
   },
   methods: {
-    ExportSold() {
+    async ExportSold() {
       let fields = this.selectedFields
       let colArray = [];
       for(let i = 0; i < fields.length; i++) {
@@ -189,65 +192,83 @@ export default {
             break;
         }
       }
-      let data = []
-      console.log(this.categorieFilter.length, " ", this.tagFilter.length, " ", this.stockFilter)
-      if(this.categorieFilter.length === 0 && this.tagFilter.length === 0 && this.stockFilter === "") {
-        data = this.$store.state.products
-      } else {
-        if(this.categorieFilter.length !== 0) {
+      this.loading = true;
+      let data = await this.filterProducts()
+      this.loading = false;
+      exportCSV(data, colArray, this.filename)
+    },
+    filterCategoires() {
+      let newData = [];
           for(let x = 0; x < this.$store.state.products.length; x++) {
             for(let k = 0; k < this.categorieFilter.length; k++) {
               for(let i = 0; i < this.$store.state.products[x].categories.length; i++) {
                 if(this.$store.state.products[x].categories[i].name === this.categorieFilter[k].name) {
-                    data.push(this.$store.state.products[x])
-                  }
+                    newData.push(this.$store.state.products[x])
                 }
               }
             }
           }
-        }
+      return newData
+    },
+    filterTags(data) {
+      let newData = [];
         if(data.length !== 0) {
           if(this.tagFilter.length !== 0) {
             for(let x = 0; x < data.length; x++) {
               for(let k = 0; k < this.tagFilter.length; k++) {
                 for(let i = 0; i < data[x].tags.length; i++) {
                   if(data[x].tags[i].name === this.tagFilter[k].name)
-                  data.splice(x, 0)
+                  data.splice(x, 1)
                 }
               }
             }
           }
+          newData = data
         } else {
           for(let x = 0; x < this.$store.state.products.length; x++) {
           if(this.tagFilter.length !== 0) {
             for(let k = 0; k < this.tagFilter.length; k++) {
               for(let i = 0; i < this.$store.state.products[x].tags.length; i++) {
                 if(this.$store.state.products[x].tags[i].name === this.tagFilter[k].name) {
-                  data.push(this.$store.state.products[x])
+                  newData.push(this.$store.state.products[x])
                   }
                 }
               }
             }
           }
         }
-        if(data.length !== 0) {
-          if(this.stockFilter != null) {
+      return newData
+    },
+    filterStock(data) {
+      let newData = [];
+          if(data.length !== 0 && this.stockFilter != 999) {
             for(let x = 0; x < data.length; x++) {
-              if(data[x].stock_quantity >= this.stockFilter) {
-                data.splice(x, 0)
+              if(data[x].stock_quantity > this.stockFilter) {
+                data.splice(x, 1)
               }
-            }
           } 
+          newData = data
         } else {
-          if(this.stockFilter != null) {
+          if(this.stockFilter != 999) {
             for(let x = 0; x < this.$store.state.products.length; x++) {
-              if(data[x].stock_quantity <= this.stock_quantity) {
-                data.push(this.$store.state.products[x])
+              if(this.$store.state.products[x].manage_stock === true && this.$store.state.products[x].stock_quantity && this.$store.state.products[x].stock_quantity <= this.stock_quantity) {
+                newData.push(this.$store.state.products[x])
               }
             }
           }
         }
-      exportCSV(data, colArray, this.filename)
+      return newData
+    },
+    async filterProducts() {
+    let data = [];
+      if(this.categorieFilter.length === 0 && this.tagFilter.length === 0 && this.stockFilter === "") {
+        data = this.$store.state.products
+      } else {
+        data = await this.filterCategoires(data)
+        data = await this.filterTags(data)
+        data = await this.filterStock(data)
+      }
+    return data
     }
   }
 }

@@ -12,7 +12,9 @@
           <span class="headline">Update verfügbar!</span>
         </v-card-title>
         <v-card-text>
-          <v-btn color="accent"> Update Installieren </v-btn>
+          <v-btn color="accent" @click="refreshApp"> Update Installieren </v-btn>
+          <span>oder STRG + SHIFT + R</span>
+
         </v-card-text>
       </v-card>
     </v-dialog>
@@ -336,7 +338,9 @@ export default {
           .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=${i}`)
           .then(res => {
             for(let x = 0; x < res.data.length; x++) {
-              this.$store.state.products.push(res.data[x])
+              if(res.data[x].name != "") {
+                this.$store.state.products.push(res.data[x])
+              }
               if(res.data[x].stock_quantity <= 0 && res.data[x].manage_stock == true && res.data[x].name != "") {
                 this.$store.state.outOfStock.push(res.data[x])
               }
@@ -418,9 +422,6 @@ export default {
     if(localStorage.getItem('nav')) {
       this.links = JSON.parse(localStorage.getItem('nav'))
     }
-    window.addEventListener('unload', () => {
-      window.alert("Achtung du willst die Seite neu laden. Dann müssen alle Produkte wieder geladen werden")
-    })
     this.refreshApp(),
     document.addEventListener(
     'swUpdated', this.showRefreshUI, { once: true }
