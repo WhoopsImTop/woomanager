@@ -190,43 +190,63 @@ export default {
         }
       }
       let data = []
-      if(this.categorieFilter.length === 0 && this.tagFilter.length === 0 || this.stockFilter === "") {
+      console.log(this.categorieFilter.length, " ", this.tagFilter.length, " ", this.stockFilter)
+      if(this.categorieFilter.length === 0 && this.tagFilter.length === 0 && this.stockFilter === "") {
         data = this.$store.state.products
       } else {
-        data = this.$store.state.products
-        for(let i = 0; i < data.length; i++) {
-          if(this.categorieFilter.length !== 0) {
-            let found = false
-            for(let j = 0; j < this.categorieFilter.length; j++) {
-              if(data[i].categories.map(category => category.name).includes(this.categorieFilter[j])) {
-                found = true
+        if(this.categorieFilter.length !== 0) {
+          for(let x = 0; x < this.$store.state.products.length; x++) {
+            for(let k = 0; k < this.categorieFilter.length; k++) {
+              for(let i = 0; i < this.$store.state.products[x].categories.length; i++) {
+                if(this.$store.state.products[x].categories[i].name === this.categorieFilter[k].name) {
+                    data.push(this.$store.state.products[x])
+                  }
+                }
               }
-            }
-            if(!found) {
-              data.splice(i, 1)
-              i--
-            }
-          }
-          if(this.tagFilter.length !== 0) {
-            let found = false
-            for(let j = 0; j < this.tagFilter.length; j++) {
-              if(data[i].tags.map(tag => tag.name).includes(this.tagFilter[j])) {
-                found = true
-              }
-            }
-            if(!found) {
-              data.splice(i, 1)
-              i--
-            }
-          }
-          if(this.stockFilter !== "") {
-            if(data[i].stock_quantity != undefined && data[i].stock_quantity < this.stockFilter) {
-              data.splice(i, 1)
-              i--
             }
           }
         }
-      }
+        if(data.length !== 0) {
+          if(this.tagFilter.length !== 0) {
+            for(let x = 0; x < data.length; x++) {
+              for(let k = 0; k < this.tagFilter.length; k++) {
+                for(let i = 0; i < data[x].tags.length; i++) {
+                  if(data[x].tags[i].name === this.tagFilter[k].name)
+                  data.splice(x, 0)
+                }
+              }
+            }
+          }
+        } else {
+          for(let x = 0; x < this.$store.state.products.length; x++) {
+          if(this.tagFilter.length !== 0) {
+            for(let k = 0; k < this.tagFilter.length; k++) {
+              for(let i = 0; i < this.$store.state.products[x].tags.length; i++) {
+                if(this.$store.state.products[x].tags[i].name === this.tagFilter[k].name) {
+                  data.push(this.$store.state.products[x])
+                  }
+                }
+              }
+            }
+          }
+        }
+        if(data.length !== 0) {
+          if(this.stockFilter != "") {
+            for(let x = 0; x < data.length; x++) {
+              if(data[x].stock_quantity >= this.stockFilter) {
+                data.splice(x, 0)
+              }
+            }
+          } 
+        } else {
+          if(this.stockFilter != "") {
+            for(let x = 0; x < this.$store.state.products.length; x++) {
+              if(data[x].stock_quantity <= this.stock_quantity) {
+                data.push(this.$store.state.products[x])
+              }
+            }
+          }
+        }
       exportCSV(data, colArray, this.filename)
     }
   }
