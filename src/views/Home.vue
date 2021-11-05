@@ -88,7 +88,7 @@ export default {
       selectedFields: [],
       categorieFilter: [],
       tagFilter: [],
-      stockFilter: '',
+      stockFilter: null,
       productFields: [
         "Produktname",
         "Preis",
@@ -231,7 +231,7 @@ export default {
           }
         }
         if(data.length !== 0) {
-          if(this.stockFilter != "") {
+          if(this.stockFilter != null) {
             for(let x = 0; x < data.length; x++) {
               if(data[x].stock_quantity >= this.stockFilter) {
                 data.splice(x, 0)
@@ -239,7 +239,7 @@ export default {
             }
           } 
         } else {
-          if(this.stockFilter != "") {
+          if(this.stockFilter != null) {
             for(let x = 0; x < this.$store.state.products.length; x++) {
               if(data[x].stock_quantity <= this.stock_quantity) {
                 data.push(this.$store.state.products[x])
