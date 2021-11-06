@@ -278,7 +278,7 @@
                 outlined
                 :items="Statuses"
                 label="Status Filter"
-                v-model="selectedStatus"
+                v-model="$store.state.selectedStatus"
             >
             </v-combobox>
             <v-spacer></v-spacer> 
@@ -377,7 +377,6 @@ export default {
         scans: [],
         backupScans: [],
         Statuses: ["Bitte Aufnehmen", "nicht gefunden", "Später"],
-        selectedStatus: "nicht gefunden",
         scanBackup: [],
         url: "https://www.barcodelookup.com/",
         GoogleSearch: "https://www.google.de/search?q=",
@@ -466,15 +465,17 @@ export default {
       },
 
       StatusSorter() {
-        this.loading = true
-        let newArray = []
-        for(let i = 0; i < this.scanBackup.length; i++) {
-          if(this.scanBackup[i].Status.toLowerCase() === this.selectedStatus.toLowerCase()) {
-            newArray.push(this.scanBackup[i])
+        if(this.$store.state.selectedStatus != "Bitte Auswählen" && this.$store.state.selectedStatus != undefined) {
+          this.loading = true
+          let newArray = []
+          for(let i = 0; i < this.scanBackup.length; i++) {
+            if(this.scanBackup[i].Status.toLowerCase() === this.$store.state.selectedStatus.toLowerCase()) {
+              newArray.push(this.scanBackup[i])
+            }
           }
+          this.scans = newArray
+          this.loading = false
         }
-        this.scans = newArray
-        this.loading = false
       },
 
       initialize () {
@@ -512,12 +513,11 @@ export default {
         },
 
         UploadImage(compressedFile) {
-          let Token = localStorage.getItem('Auth-token')
           let data = compressedFile
           axios
           .post('https://bindis-schaulaedle.de/wp-json/wp/v2/media', data, { 
             headers: {
-              "Authorization": 'Bearer ' + Token,
+              "Authorization": 'Bearer ' + this.$store.state.imageToken,
               'Content-Disposition': `attachment; filename=${compressedFile.name}`,
               'Content-type': compressedFile.type,
             }
@@ -552,9 +552,9 @@ export default {
           this.editedItem.stock_quantity = item.Anzahl
         },
 
-        GetData() {
+        async GetData() {
             this.loading = true
-            axios
+            await axios
             .get('https://bindis.rezept-zettel.de/api/scans')
             .then(response => {
                 this.scans = response.data

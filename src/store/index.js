@@ -12,7 +12,9 @@ export default new Vuex.Store({
     loading: true,
     timeToday: [],
     orders: [],
-    selectedScans: []
+    selectedScans: [],
+    imageToken: '',
+    selectedScanStatus: 'Bitte Auswählen',
   },
   mutations: {
   },

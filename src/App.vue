@@ -76,20 +76,44 @@
     >
       <v-tooltip v-for="link, i in links" :key="i" right>
       <template v-slot:activator="{ on, attrs }">
-        <v-btn
-          class="px-2 mb-4 left-bar-btn"
-          v-show="link.active == true"
-          icon
-          link
-          dark
-          v-bind="attrs"
-          v-on="on"
-          :to="link.to"
+        <v-badge
+          v-if="link.badge"
+          color="deep-red accent-4"
+          dot
+          offset-x="10"
+          offset-y="10"
+          :content="orders.length"
         >
-          <v-img
-            :src="link.icon"
-          />
-        </v-btn>
+          <v-btn
+            class="px-2 mb-4 left-bar-btn"
+            v-show="link.active == true"
+            icon
+            link
+            dark
+            v-bind="attrs"
+            v-on="on"
+            :to="link.to"
+          >
+            <v-img
+              :src="link.icon"
+            />
+          </v-btn>
+        </v-badge>
+        <v-btn
+            v-else
+            class="px-2 mb-4 left-bar-btn"
+            v-show="link.active == true"
+            icon
+            link
+            dark
+            v-bind="attrs"
+            v-on="on"
+            :to="link.to"
+          >
+            <v-img
+              :src="link.icon"
+            />
+          </v-btn>
       </template>
       <span>{{ link.name }}</span>
     </v-tooltip>
@@ -230,6 +254,7 @@ export default {
           to: "/orders",
           icon: "./static/receipt.svg",
           active: false,
+          badge: true
         },
         {
           name: "Produkte",
@@ -276,6 +301,7 @@ export default {
       refreshing: false,
       registration: null,
       updateExists: true,
+      orders: [],
     }
   },
   computed: {
@@ -297,6 +323,14 @@ export default {
     }
   },
   methods: {
+    getOrdersOnHold() {
+      this.$store.state.orders.map(order => {
+        if (order.status == "on-hold") {
+          this.orders.push(order)
+        }
+      })
+    },
+
     showRefreshUI (e) {
       this.registration = e.detail;
       this.updateExists = true;
@@ -389,6 +423,14 @@ export default {
       .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/orders/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}`)
       .then(res => {
         this.$store.state.orders = res.data
+      })
+      .catch((e) => {
+        console.log(e)
+      })
+      axios
+      .get('https://bindis.rezept-zettel.de/api/token')
+      .then(res => {
+        this.$store.state.imageToken = res.data
       })
       .catch((e) => {
         console.log(e)

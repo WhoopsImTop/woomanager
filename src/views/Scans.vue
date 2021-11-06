@@ -112,6 +112,7 @@
 </template>
 
 <script>
+import onScan from 'onscan.js'
 import axios from 'axios'
 import timestamp from 'time-stamp'
 import guidGenerator from '../helpers/uid'
@@ -276,6 +277,13 @@ export default {
                 })
             })
         },
+    },
+    created() {
+        onScan.attachTo(document);
+        // Register event listener
+        document.addEventListener('scan', function(sScancode, iQuatity) {
+            console.log(iQuatity + 'x ' + sScancode); 
+        });
     }
 }
 </script>

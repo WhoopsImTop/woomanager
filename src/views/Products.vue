@@ -362,7 +362,10 @@ export default {
       dialogLoading: false,
       imgLoading: false,
       suche: "",
-      status: null,
+      status: {
+          name: "Entwurf",
+          value: "draft"
+        }, 
       statusItems: [
         {
           name: "Entwurf",
@@ -539,12 +542,11 @@ export default {
           }
         },
         UploadImage(compressedFile) {
-          let Token = localStorage.getItem('Auth-token')
           let data = compressedFile
           axios
           .post('https://bindis-schaulaedle.de/wp-json/wp/v2/media', data, { 
             headers: {
-              "Authorization": 'Bearer ' + Token,
+              "Authorization": 'Bearer ' + this.$store.state.imageToken,
               'Content-Disposition': `attachment; filename=${compressedFile.name}`,
               'Content-type': compressedFile.type,
             }
@@ -561,7 +563,7 @@ export default {
             .catch((err) => {
               console.log("AXIOS ERROR: ", err);
               this.imgLoading = false
-              this.fileHint = "Bild konnten ich hochgeladen werden"
+              this.fileHint = "Bild konnte nicht hochgeladen werden"
             })
         },
 
@@ -678,10 +680,10 @@ export default {
           axios.post(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`,
           this.editedItem)
           .then(Response => {
-            this.$store.state.products.unshift(Response.data)
             this.btnLoading = false
             this.btnText = "Produkt erfolgreich erstellt"
             this.btnColor = "success"
+            this.$store.state.products.unshift(Response.data)
             setTimeout(() => {
               this.btnLoading = false
               this.btnText = "speichern"

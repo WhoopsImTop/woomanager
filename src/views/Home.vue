@@ -64,6 +64,7 @@
         </v-col>
         <v-col cols="4">
           <v-btn
+          v-if="selectedFields != 0"
           icon
           block
           x-large
@@ -242,16 +243,16 @@ export default {
     filterStock(data) {
       let newData = [];
           if(data.length !== 0 && this.stockFilter != 999) {
-            for(let x = 0; x < data.length; x++) {
-              if(data[x].stock_quantity > this.stockFilter) {
-                data.splice(x, 1)
+            data.filter(product => {
+              if(product.stock_quantity <= this.stockFilter) {
+                newData.push(product)
               }
-          } 
-          newData = data
+            })
         } else {
           if(this.stockFilter != 999) {
             for(let x = 0; x < this.$store.state.products.length; x++) {
-              if(this.$store.state.products[x].manage_stock === true && this.$store.state.products[x].stock_quantity && this.$store.state.products[x].stock_quantity <= this.stock_quantity) {
+              console.log(this.$store.state.products.length)
+              if(this.$store.state.products[x].stock_quantity <= this.stockFilter || this.$store.state.products[x].stock_quantity === undefined || this.$store.state.products[x].stock_quantity === null) {
                 newData.push(this.$store.state.products[x])
               }
             }
