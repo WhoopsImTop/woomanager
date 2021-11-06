@@ -338,6 +338,7 @@ export default {
     refreshApp () {
       this.updateExists = false;
       if (!this.registration || !this.registration.waiting) { return; }
+      self.skipWaiting();
       this.registration.waiting.postMessage('skipWaiting');
     },
     startTimeRecording() {
