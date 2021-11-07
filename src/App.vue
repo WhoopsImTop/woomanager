@@ -78,10 +78,8 @@
       <template v-slot:activator="{ on, attrs }">
         <v-badge
           v-if="link.badge"
-          color="deep-red accent-4"
+          color="accent"
           dot
-          offset-x="10"
-          offset-y="10"
           :content="orders.length"
         >
           <v-btn
@@ -99,8 +97,8 @@
             />
           </v-btn>
         </v-badge>
+        <div v-else>
         <v-btn
-            v-else
             class="px-2 mb-4 left-bar-btn"
             v-show="link.active == true"
             icon
@@ -114,6 +112,7 @@
               :src="link.icon"
             />
           </v-btn>
+        </div>
       </template>
       <span>{{ link.name }}</span>
     </v-tooltip>
@@ -329,6 +328,7 @@ export default {
           this.orders.push(order)
         }
       })
+      console.log(this.orders)
     },
 
     showRefreshUI (e) {
@@ -339,7 +339,7 @@ export default {
       this.updateExists = false;
       if (!this.registration || !this.registration.waiting) { return; }
       self.skipWaiting();
-      this.registration.waiting.postMessage('skipWaiting');
+      this.registration.waiting.postMessage('SKIP_WAITING');
     },
     startTimeRecording() {
       this.timeRecording = !this.timeRecording
@@ -424,6 +424,7 @@ export default {
       .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/orders/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}`)
       .then(res => {
         this.$store.state.orders = res.data
+        this.getOrdersOnHold()
       })
       .catch((e) => {
         console.log(e)
@@ -465,7 +466,7 @@ export default {
     if(localStorage.getItem('nav')) {
       this.links = JSON.parse(localStorage.getItem('nav'))
     }
-    this.refreshApp(),
+    this.refreshApp()
     document.addEventListener(
     'swUpdated', this.showRefreshUI, { once: true }
     );

@@ -1,5 +1,8 @@
 <template>
     <div>
+
+      <imageEditorPopup @closeImagePopup="imgPopup = false" :imagePopup="imgPopup" @croppedImage="UploadImage($event)" />
+
         <h1 style="margin: 20px 0">Produkte</h1>
       <v-data-table
         dark
@@ -201,16 +204,7 @@
                         sm="4"
                         md="4"
                       >
-                        <v-file-input
-                          dark
-                          id="image"
-                          @change="Compress"
-                          v-model="chosenFile"
-                          :loading="imgLoading"
-                          truncate-length="16"
-                          :hint="fileHint"
-                          label="Bild"
-                        ></v-file-input>
+                      <v-btn color="accent darken-1" class="mt-4" @click="imgPopup = true" ><v-icon>mdi-upload</v-icon> Bild auswählen</v-btn>
                       </v-col>
                         <div v-for="image in editedItem.images" :key="image" style="position: relative">
                           <v-btn
@@ -277,7 +271,7 @@
             </v-dialog>
 
             <v-dialog v-model="duplicationDialog" max-width="500px">
-              <v-card>
+              <v-card dark class="glass2">
                 <v-card-title class="text-h5">Artikel Duplizieren ?</v-card-title>
                 <v-card-text>Sind Sie sich sicher das sie "{{ editedItem.name }}" Duplizieren wollen ?</v-card-text>
                 <v-card-actions>
@@ -344,9 +338,11 @@
 <script>
 import axios from 'axios';
 import imageCompression from 'browser-image-compression';
+import imageEditorPopup from '../components/imageEditorPopup.vue'
 
 export default {
     data: () => ({
+      imgPopup: false,
       dialog: false,
       duplicationDialog: false,
       dialogDelete: false,
@@ -429,6 +425,9 @@ export default {
         status: "draft",
       },
     }),
+    components: {
+      imageEditorPopup
+    },
 
     computed: {
       formTitle () {
@@ -469,9 +468,7 @@ export default {
         })
         .then(res => {
           this.dialogLoading = false
-          this.products.push(res.data)
-          res.data.concat(this.products)
-          res.data.concat(this.$store.state.products)
+          this.$store.state.products.unshift(res.data)
           this.closeDuplication()
         })
         .catch((e) => {
@@ -558,6 +555,7 @@ export default {
                   src: res.data.source_url,
                   name: res.data.slug
                 })
+                this.imgPopup = false
                 this.imgLoading = false
                 })
             .catch((err) => {
@@ -600,7 +598,6 @@ export default {
         axios
         .delete(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/${this.editedItem.id}/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`)
         .then(() => {
-          this.products.splice(this.editedIndex, 1)
           this.$store.state.products.splice(this.editedIndex, 1)
           this.dialogLoading = false
           this.closeDelete()

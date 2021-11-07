@@ -72,8 +72,9 @@
                           <v-card class="glass">
                             <v-card-title>Bestelle Produkte</v-card-title>
                             
-                              <div class="glass pa-3 my-2" v-for="item in editedItem.line_items" :key="item.id">
-                                <span>{{ item.quantity }} x  {{ item.name }}</span>   
+                              <div class="glass pa-3 my-2 d-flex flex-row" v-for="item in editedItem.line_items" :key="item.id">
+                                <v-img style="width:100px; height: 100px; margin-right: 5px" :src="getImageFromProduct(item)"></v-img>
+                                <span style="font-size: 15px"><strong>{{ item.quantity }}</strong> x  {{ item.name }}</span>   
                               </div>
                            
                           </v-card>
@@ -268,7 +269,15 @@ export default {
       val || this.closeDelete()
     },
   },
-  methods: {    
+  methods: {  
+    getImageFromProduct(item) {
+      //find value in array
+      for(let i = 0; i < this.$store.state.products.length; i++) {
+        if(this.$store.state.products[i].name == item.name) {
+          return this.$store.state.products[i].images[0].src
+        }
+      }
+    },  
     getData() {
      this.orders = this.$store.state.orders
     },
