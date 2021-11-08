@@ -8,6 +8,7 @@
         dark
         :headers="headers"
         :items="products"
+        item-key="id"
         sort-by="calories"
         class="elevation-1 glass"
         :loading = dataLoading

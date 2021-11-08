@@ -28,8 +28,6 @@
                 id="cropper" 
                 :src="imgUrl"
                 @change="change"
-                :minWidth="1080"
-                :minHeight="1080"
                 :width="1080"
                 :height="1080"
             />

@@ -1,6 +1,5 @@
 <template>
   <v-app dark>
-
     <v-dialog 
      persistent
      max-width="285px"
@@ -356,7 +355,7 @@ export default {
       localStorage.setItem('nav', JSON.stringify(this.links))
       this.settingDialog = false
     },
-    async getData() {
+    getData() {
       axios
       .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=1`)
       .then(res => {
