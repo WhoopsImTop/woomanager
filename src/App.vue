@@ -5,14 +5,14 @@
      persistent
      max-width="285px"
      dark 
-     v-model="updateExists"
+     v-model="showUpdateUI"
      >
       <v-card class="glass2">
         <v-card-title>
           <span class="headline">Update verfügbar!</span>
         </v-card-title>
         <v-card-text>
-          <v-btn color="accent" @click="refreshApp"> Update Installieren </v-btn>
+          <v-btn color="accent" @click="accept"> Update Installieren </v-btn>
           <span>oder STRG + SHIFT + R</span>
 
         </v-card-text>
@@ -299,7 +299,7 @@ export default {
       totalTime: 0.00,
       refreshing: false,
       registration: null,
-      updateExists: true,
+      showUpdateUI: false,
       orders: [],
     }
   },
@@ -330,16 +330,9 @@ export default {
       })
       console.log(this.orders)
     },
-
-    showRefreshUI (e) {
-      this.registration = e.detail;
-      this.updateExists = true;
-    },
-    refreshApp () {
-      this.updateExists = false;
-      if (!this.registration || !this.registration.waiting) { return; }
-      self.skipWaiting();
-      this.registration.waiting.postMessage('SKIP_WAITING');
+    async accept() {
+      this.showUpdateUI = false;
+      await this.$workbox.messageSW({ type: "SKIP_WAITING" });
     },
     startTimeRecording() {
       this.timeRecording = !this.timeRecording
@@ -421,6 +414,17 @@ export default {
         console.log(e)
       })
       axios
+      .get('https://bindis.rezept-zettel.de/api/token')
+      .then(res => {
+        this.$store.state.imageToken = res.data
+      })
+      .catch((e) => {
+        console.log(e)
+      })
+      this.getOrders();
+    },
+    getOrders() {
+      axios
       .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/orders/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}`)
       .then(res => {
         this.$store.state.orders = res.data
@@ -429,14 +433,9 @@ export default {
       .catch((e) => {
         console.log(e)
       })
-      axios
-      .get('https://bindis.rezept-zettel.de/api/token')
-      .then(res => {
-        this.$store.state.imageToken = res.data
-      })
-      .catch((e) => {
-        console.log(e)
-      })
+      setTimeout(() => {
+        this.getOrders()
+      }, 1000 * 60 * 5)
     },
     CheckConnection() {
       this.btnLoading = true
@@ -466,20 +465,10 @@ export default {
     if(localStorage.getItem('nav')) {
       this.links = JSON.parse(localStorage.getItem('nav'))
     }
-    this.refreshApp()
-    document.addEventListener(
-    'swUpdated', this.showRefreshUI, { once: true }
-    );
-    if (navigator.serviceWorker) {  
-      navigator.serviceWorker.addEventListener(
-        'controllerchange', () => {
-          if (this.refreshing) return;
-          this.refreshing = true;
-          window.location.reload();
-          localStorage.removeItem('auth-token')
-          localStorage.removeItem('UserID')
-        }
-      );
+    if (this.$workbox) {
+      this.$workbox.addEventListener("waiting", () => {
+        this.showUpdateUI = true;
+      });
     }
   }
 }
