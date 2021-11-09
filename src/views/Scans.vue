@@ -91,6 +91,7 @@
             </v-data-table>
           </v-col>
           <v-col
+          v-if="!this.aufnahme"
           cols="2"
           style="position: relative; display: flex; flex-direction: column; background-color:#efefef; text-align: center; color: #353535"
           >
@@ -106,6 +107,28 @@
               <hr>
                 <span style="font-family: monospace">Gesamt: {{ countPrices }}€</span>
               </div>
+          </v-col>
+          
+          <v-col
+          v-else
+          cols="2"
+          >
+            <v-card
+            class="glass"
+            dark
+            >
+              <v-card-title>
+                <span class="headline">Aufzunehmende Scans</span>
+              </v-card-title>
+              <v-card-text>
+                <v-list class="glass2">
+                    <v-list-item v-for="item in ScannedList" :key="item._id">
+                        <v-list-item-title>{{ item.EAN }}</v-list-item-title>
+                        <v-list-item-action><v-btn icon><v-icon small>mdi-delete</v-icon></v-btn></v-list-item-action>
+                    </v-list-item>
+                </v-list>
+              </v-card-text>
+            </v-card>
           </v-col>
       </v-row>
   </div>
@@ -136,6 +159,7 @@ export default {
             searchEANText: '',
             dialog: false,
             selectedItem: [],
+            ScannedList: []
         }
     },
     computed: {
@@ -186,6 +210,13 @@ export default {
                         "EAN": Search,
                         "Status": "Bitte Aufnehmen",
                         "TimeStamp": timestamp('DD.MM HH:mm:ss')
+                    })
+                    .then(() => {
+                        this.ScannedList.push({
+                        "EAN": Search,
+                        "Status": "Bitte Aufnehmen",
+                        "TimeStamp": timestamp('DD.MM HH:mm:ss')
+                        })
                     })
                 }
             }

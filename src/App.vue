@@ -327,7 +327,6 @@ export default {
           this.orders.push(order)
         }
       })
-      console.log(this.orders)
     },
     async accept() {
       this.showUpdateUI = false;

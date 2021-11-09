@@ -73,7 +73,7 @@
                             <v-card-title>Bestelle Produkte</v-card-title>
                             
                               <div class="glass pa-3 my-2 d-flex flex-row" v-for="item in editedItem.line_items" :key="item.id">
-                                <v-img style="width:100px; height: 100px; margin-right: 5px" :src="getImageFromProduct(item)"></v-img>
+                                <v-img style="width:100px; height: 100px; margin-right: 5px" :src="item.images"></v-img>
                                 <span style="font-size: 15px"><strong>{{ item.quantity }}</strong> x  {{ item.name }}</span>   
                               </div>
                            
@@ -270,16 +270,21 @@ export default {
     },
   },
   methods: {  
-    getImageFromProduct(item) {
-      //find value in array
-      for(let i = 0; i < this.$store.state.products.length; i++) {
-        if(this.$store.state.products[i].name == item.name) {
-          return this.$store.state.products[i].images[0].src
-        }
-      }
-    },  
     getData() {
      this.orders = this.$store.state.orders
+     for(let i = 0; i <= this.$store.state.orders.length; i++) {
+          for(let x = 0; x <= this.$store.state.orders[i].line_items.length; x++) {
+            for(let y = 0; y <= this.$store.state.products.length; y++) {
+              try {
+                if(this.$store.state.products[y].name == this.$store.state.orders[i].line_items[x].name) {
+                  this.$store.state.orders[i].line_items[x].images = this.$store.state.products[y].images[0].src
+                }
+              } catch(e) {
+                e
+              }
+            }
+          }
+        }
     },
 
     editItem (item) {
@@ -326,6 +331,7 @@ export default {
   },
   created() {
     this.getData()
+    console.log(this.$store.state.orders)
   }
 }
 </script>

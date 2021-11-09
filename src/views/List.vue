@@ -276,6 +276,7 @@
                 style="margin: 0; height: 56px;"
                 @change="StatusSorter()"
                 outlined
+                clearable
                 :items="Statuses"
                 label="Status Filter"
                 v-model="$store.state.selectedStatus"
@@ -465,7 +466,7 @@ export default {
       },
 
       StatusSorter() {
-        if(this.$store.state.selectedStatus != "Bitte Auswählen" && this.$store.state.selectedStatus != undefined) {
+        if(this.$store.state.selectedStatus != "Bitte Auswählen" && this.$store.state.selectedStatus != "" && this.$store.state.selectedStatus != undefined) {
           this.loading = true
           let newArray = []
           for(let i = 0; i < this.scanBackup.length; i++) {
@@ -475,6 +476,8 @@ export default {
           }
           this.scans = newArray
           this.loading = false
+        } else {
+          this.scans = this.backupScans
         }
       },
 
@@ -612,6 +615,7 @@ export default {
               console.log(e)
             })
           }
+          this.$store.state.selectedScans = []
         },
         
         UpdateStatus() {
@@ -631,6 +635,7 @@ export default {
               console.log(e)
             })
           }
+          this.$state.store.selectedScans = []
         },
 
     CheckData: async function() {
