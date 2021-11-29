@@ -15,8 +15,14 @@ export default new Vuex.Store({
     selectedScans: [],
     imageToken: '',
     selectedScanStatus: 'Bitte Auswählen',
+    latestEdited: [],
   },
   mutations: {
+    addToList (state, payload) {
+      state.latestEdited.push(payload)
+      let arr = state.latestEdited.reverse()
+      localStorage.setItem('latestEdited', JSON.stringify(arr))
+    }
   },
   actions: {
   },

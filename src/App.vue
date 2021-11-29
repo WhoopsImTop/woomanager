@@ -67,6 +67,67 @@
             <span>{{ workTimePassed }}</span>
             <v-icon @click="startTimeRecording" small class="ml-4">{{ timeRecordingStatus }}</v-icon>
           </v-chip>
+
+          <v-btn 
+            icon
+            dark
+            @click="showLatestEdited = !showLatestEdited"
+          >
+            <v-icon>
+              mdi-history
+            </v-icon>
+          </v-btn>
+
+          <v-dialog
+            v-model="showLatestEdited"
+            max-width="600px"
+            dark
+          >
+            <v-card
+              class="glass2"
+            >
+              <v-card-title>
+                <span class="headline">Von dir zuletzt Bearbeitet</span>
+              </v-card-title>
+              <v-divider></v-divider>
+              <v-card-text>
+                <v-list class="glass mt-3">
+                  <v-list-item dark v-for="item in $store.state.latestEdited" :key="item.id">
+                    <v-list-item-avatar>
+                      <v-img v-if="item.images[0]" :src="item.images[0].src" class="avatar"></v-img>
+                      <v-img v-else src="../public/img/placeholder.png" class="avatar"></v-img>
+                    </v-list-item-avatar>
+                    <v-list-item-content>
+                      <v-list-item-title>
+                        {{ item.name }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ item.price }}
+                      </v-list-item-subtitle>
+                    </v-list-item-content>
+                      <span>Bearbeitet <br> am {{ FormatItemDate(item.edited_at) }}</span>
+                      <v-spacer></v-spacer>
+                      <v-chip label :color="getItemMethod(item.method).color">{{ getItemMethod(item.method).method }} </v-chip>
+                    <v-list-item-action>
+                      <v-btn 
+                        icon
+                        dark
+                        :loading="item.loading"
+                        @click="undoAction(item)"
+                      >
+                      <v-icon>mdi-undo</v-icon>
+                      </v-btn>
+                    </v-list-item-action>
+                  </v-list-item>
+                </v-list>
+              </v-card-text>
+              <v-divider></v-divider>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn text @click="showLatestEdited = false">Schließen</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
     </v-app-bar>
 
     <v-navigation-drawer
@@ -300,6 +361,7 @@ export default {
       registration: null,
       showUpdateUI: false,
       orders: [],
+      showLatestEdited: false,
     }
   },
   computed: {
@@ -321,6 +383,91 @@ export default {
     }
   },
   methods: {
+    undoAction(item) {
+      switch(item.method) {
+        case "Delete":
+          this.restoreProduct(item)
+          break;
+        case "Patch":
+          this.undoPatch(item)
+          break;
+      }
+    },
+    restoreProduct(item) {
+      let index = this.$store.state.latestEdited.indexOf(item)
+      this.$store.state.latestEdited[index].loading = true
+      axios.post(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`, {
+        name: item.name,
+        price: item.price,
+        regular_price: item.regular_price,
+        description: item.description,
+        short_description: item.short_description,
+        categories: item.categories,
+        tags: item.tags,
+        images: item.images,
+        attributes: item.attributes,
+        sku: item.sku,
+        stock_quantity: item.stock_quantity,
+        stock_status: item.stock_status,
+        ean_code: item.ean_code,
+        meta_data: item.meta_data,
+        status: "draft",
+      })
+      .then(response => {
+        this.$store.state.products.unshift(response.data)
+        this.$store.state.latestEdited[index].loading = false
+      })
+      .catch(error => {
+        console.log(error)
+        this.$store.state.latestEdited[index].loading = false
+      })
+    },
+    undoPatch(item) {
+      let index = this.$store.state.latestEdited.indexOf(item)
+      this.$store.state.latestEdited[index].loading = true
+      axios.patch(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/${item.id}/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`, item)
+      .then(response => {
+        this.$store.state.products[item] = response.data
+        this.$store.state.latestEdited[index].loading = false
+      })
+      .catch(error => {
+        console.log(error)
+        this.$store.state.latestEdited[index].loading = false
+      })
+    },
+    getItemMethod(item) {
+      if(item == "Patch") {
+        return {
+          method: "Bearbeitet",
+          color: "#417B5A"
+        }
+      } 
+      else if (item == "Post") {
+        return {
+          method: "Neu Hinzugefügt",
+          color: "#6987C9"
+        }
+      } 
+      else if (item == "Delete") {
+        return {
+          method: "gelöscht",
+          color: "#EA526F"
+        }
+      }
+      else if (item == "Duplikat") {
+        return {
+          method: "Duplikat",
+          color: "#FF8A5B"
+        }
+      }
+    },
+    FormatItemDate(item) {
+      let newDate = new Date(item)
+      return newDate.getDate() + "." + (newDate.getMonth() + 1) + "." + newDate.getFullYear()
+    },
+    getFromLocalStorage() {
+      this.$store.state.latestEdited = localStorage.getItem('latestEdited') ? JSON.parse(localStorage.getItem('latestEdited')) : []
+    },
     getOrdersOnHold() {
       this.$store.state.orders.map(order => {
         if (order.status == "on-hold") {
@@ -460,6 +607,7 @@ export default {
   },
   created() {
     this.getData()
+    this.getFromLocalStorage();
     if(localStorage.getItem('nav')) {
       this.links = JSON.parse(localStorage.getItem('nav'))
     }
