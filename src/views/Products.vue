@@ -304,6 +304,9 @@
                     {{ TranslateStatus(item.status).status }}
                 </v-chip>
         </template>
+        <template v-slot:item.date="{ item }">
+                <span>{{DateFormatter(item.date_created)}}</span>
+        </template>
         <template v-slot:item.actions="{ item }">
           <v-icon
             small
@@ -392,6 +395,7 @@ export default {
           sortable: true,
           value: 'badge',
         },
+        { text: 'Erstellt am', value: 'date' },
         { text: 'EAN', value: 'ean_code' },
         { text: 'Bestand', value: 'stock_quantity' },
         { text: 'Artikelnummer', value: 'sku' },
@@ -450,11 +454,24 @@ export default {
     },
 
     methods: {
-        init() {
-            this.products = this.$store.state.products
-            this.category = this.$store.state.categories
-            this.tags = this.$store.state.tags
-        },
+      init() {
+        this.products = this.$store.state.products
+        //sort products by date
+        this.products.sort((a, b) => {
+          return new Date(b.date_created) - new Date(a.date_created)
+        })
+        this.category = this.$store.state.categories
+        this.tags = this.$store.state.tags
+      },
+      DateFormatter(date) {
+        let newDate = new Date(date)
+        let day = newDate.getDate()
+        let month = newDate.getMonth() + 1
+        let year = newDate.getFullYear()
+        let hour = newDate.getHours()
+        let minute = newDate.getMinutes()
+        return day + "." + month + "." + year + " " + hour + ":" + minute + " Uhr"
+      },
       duplicateItemConfirm() {
         this.dialogLoading = true
         axios
