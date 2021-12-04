@@ -272,6 +272,7 @@ export default {
   methods: {  
     getData() {
      this.orders = this.$store.state.orders
+     if(!this.orders[0].line_items[0].images) {
      for(let i = 0; i <= this.$store.state.orders.length; i++) {
           for(let x = 0; x <= this.$store.state.orders[i].line_items.length; x++) {
             for(let y = 0; y <= this.$store.state.products.length; y++) {
@@ -285,6 +286,7 @@ export default {
             }
           }
         }
+      }
     },
 
     editItem (item) {

@@ -474,9 +474,6 @@ export default {
       },
       duplicateItemConfirm() {
         this.dialogLoading = true
-        this.editedItem.method = "Duplikat"
-        this.editedItem.loading = false
-        this.$store.commit('addToList', this.editedItem)
         axios
         .post(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`,
         {
@@ -616,10 +613,14 @@ export default {
 
       deleteItemConfirm () {
         this.dialogLoading = true
-        this.editedItem.method = "Delete"
-        this.editedItem.edited_at = new Date()
-        this.editedItem.loading = false
-        this.$store.commit('addToList', this.editedItem)
+        try {
+          this.editedItem.method = "Delete"
+          this.editedItem.edited_at = new Date()
+          this.editedItem.loading = false
+          this.$store.commit('addToList', this.editedItem)
+        } catch(e) {
+          console.log(e)
+        }
         axios
         .delete(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/${this.editedItem.id}/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`)
         .then(() => {
@@ -667,11 +668,15 @@ export default {
               value: this.editedItem.ean_code
             });
           }
-          this.products[this.editedIndex].method = "Patch"
-          this.products[this.editedIndex].edited_at = new Date()
-          this.products[this.editedIndex].loading = false
-          this.editedItem.edited_at = new Date()
-          this.$store.commit('addToList', this.products[this.editedIndex])
+          try {
+            this.products[this.editedIndex].method = "Patch"
+            this.products[this.editedIndex].edited_at = new Date()
+            this.products[this.editedIndex].loading = false
+            this.editedItem.edited_at = new Date()
+            this.$store.commit('addToList', this.products[this.editedIndex])
+          } catch(e) {
+            console.log(e)
+          }
           Object.assign(this.products[this.editedIndex], this.editedItem)
           this.editedItem.status = this.status.value
           this.editedItem.manage_stock = true;

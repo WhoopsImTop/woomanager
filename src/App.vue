@@ -123,6 +123,7 @@
               </v-card-text>
               <v-divider></v-divider>
               <v-card-actions>
+                <v-btn color="red" text @click="RemoveLastEditedList()">Liste löschen</v-btn>
                 <v-spacer></v-spacer>
                 <v-btn text @click="showLatestEdited = false">Schließen</v-btn>
               </v-card-actions>
@@ -313,7 +314,6 @@ export default {
           to: "/orders",
           icon: "./static/receipt.svg",
           active: false,
-          badge: true
         },
         {
           name: "Produkte",
@@ -383,6 +383,14 @@ export default {
     }
   },
   methods: {
+    RemoveLastEditedList() {
+      try {
+        localStorage.removeItem('latestEdited')
+        this.$store.state.latestEdited = []
+      } catch(e) {
+        console.log(e)
+      }
+    },
     undoAction(item) {
       switch(item.method) {
         case "Delete":
@@ -467,13 +475,6 @@ export default {
     },
     getFromLocalStorage() {
       this.$store.state.latestEdited = localStorage.getItem('latestEdited') ? JSON.parse(localStorage.getItem('latestEdited')) : []
-    },
-    getOrdersOnHold() {
-      this.$store.state.orders.map(order => {
-        if (order.status == "on-hold") {
-          this.orders.push(order)
-        }
-      })
     },
     async accept() {
       this.showUpdateUI = false;
@@ -573,7 +574,6 @@ export default {
       .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/orders/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}`)
       .then(res => {
         this.$store.state.orders = res.data
-        this.getOrdersOnHold()
       })
       .catch((e) => {
         console.log(e)

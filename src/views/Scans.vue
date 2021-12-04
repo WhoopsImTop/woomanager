@@ -45,29 +45,6 @@
                 class="elevation-1 glass"
                 >
                 <template v-slot:top>
-                <v-toolbar
-                flat
-                class="glass border-rounded my-3"
-                >
-                    <v-toolbar-title>Scan</v-toolbar-title>
-                    <v-divider
-                    class="mx-4"
-                    inset
-                    vertical
-                    ></v-divider>
-                        <v-text-field
-                        ref="search"
-                        style="margin: 0; height: 56px;"
-                        dark
-                        v-model="searchParam"
-                        label="Suche"
-                        outlined
-                        autofocus="autofocus"
-                        @change="SearchEAN()"
-                        @keyup.enter="SearchEAN()"
-                        >
-                        </v-text-field>
-                    </v-toolbar>
                     <div style="position: relative; display: flex; height: 50px; align-items: center">
                     <v-chip v-show="searchEANText != ''" class="glass" color="green">{{ searchEANText }}</v-chip>
                     <v-switch
@@ -174,55 +151,63 @@ export default {
         }
     },
     methods: {
-        async SearchEAN() {
-            let Search = this.searchParam
-            this.searchParam = ''
-
-            let index = this.$store.state.products.findIndex(x => x.ean_code === Search);
-            if(Search != '') {
-                if(this.aufnahme === false) {
-                    if(index != -1) {
-                        this.searchEANText = 'Produkt gefunden'
-                        this.scans.push({
-                            "Id": this.$store.state.products[index].id,
-                            "EAN": Search,
-                            "Status": "gefunden",
-                            "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                        })
-                        this.foundScans.push(this.$store.state.products[index])
-                        this.ReduceProduct(this.$store.state.products[index].id, this.$store.state.products[index].stock_quantity)
-                    } else {
-                        this.searchEANText = 'Produkt nicht gefunden'
-                        let check = await this.serverProductChecker(Search);
-                        if(!check) {
-                        this.scans.push({
-                            "Id": guidGenerator(),
-                            "EAN": Search,
-                            "Status": "Nicht gefunden",
-                            "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                        })
-                        this.SaveItem(Search, "nicht gefunden")
-                        }
-                    }
-                } else {
-                    axios
-                    .post('https://bindis.rezept-zettel.de/api/scans', {
-                        "EAN": Search,
-                        "Status": "Bitte Aufnehmen",
-                        "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                    })
-                    .then(() => {
-                        this.ScannedList.push({
-                        "EAN": Search,
-                        "Status": "Bitte Aufnehmen",
-                        "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                        })
-                    })
-                }
+        async init() {
+            try{
+                onScan.attachTo(document);
             }
-            setTimeout(() => {
-                this.searchEANText = ''
-            }, 1000)
+            catch(e) {
+                console.log(e)
+            }
+            // Register event listener
+            document.addEventListener('scan', async(e) => {
+                let Search = e.detail.scanCode;
+
+                let index = this.$store.state.products.findIndex(x => x.ean_code === Search);
+                if(Search != '') {
+                    if(this.aufnahme === false) {
+                        if(index != -1) {
+                            this.searchEANText = 'Produkt gefunden'
+                            this.scans.push({
+                                "Id": this.$store.state.products[index].id,
+                                "EAN": Search,
+                                "Status": "gefunden",
+                                "TimeStamp": timestamp('DD.MM HH:mm:ss')
+                            })
+                            this.foundScans.push(this.$store.state.products[index])
+                            this.ReduceProduct(this.$store.state.products[index].id, this.$store.state.products[index].stock_quantity)
+                        } else {
+                            this.searchEANText = 'Produkt nicht gefunden'
+                            let check = await this.serverProductChecker(Search);
+                            if(!check) {
+                            this.scans.push({
+                                "Id": guidGenerator(),
+                                "EAN": Search,
+                                "Status": "Nicht gefunden",
+                                "TimeStamp": timestamp('DD.MM HH:mm:ss')
+                            })
+                            this.SaveItem(Search, "nicht gefunden")
+                            }
+                        }
+                    } else {
+                        axios
+                        .post('https://bindis.rezept-zettel.de/api/scans', {
+                            "EAN": Search,
+                            "Status": "Bitte Aufnehmen",
+                            "TimeStamp": timestamp('DD.MM HH:mm:ss')
+                        })
+                        .then(() => {
+                            this.ScannedList.push({
+                            "EAN": Search,
+                            "Status": "Bitte Aufnehmen",
+                            "TimeStamp": timestamp('DD.MM HH:mm:ss')
+                            })
+                        })
+                    }
+                }
+                setTimeout(() => {
+                    this.searchEANText = ''
+                }, 1000)
+            });
         },
         async serverProductChecker(id) {
             let data = await axios
@@ -281,9 +266,6 @@ export default {
             this.selectedItem = item;
             this.dialog = true;
         },
-        SelectSearch() {
-            this.$nextTick(() => this.$refs.search.focus())
-        },
         ReduceProduct: function(id, stock_quantity) {
             let newStock = stock_quantity - 1
              axios
@@ -310,11 +292,7 @@ export default {
         },
     },
     created() {
-        onScan.attachTo(document);
-        // Register event listener
-        document.addEventListener('scan', function(sScancode, iQuatity) {
-            console.log(iQuatity + 'x ' + sScancode); 
-        });
+        this.init();
     }
 }
 </script>
