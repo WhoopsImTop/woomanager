@@ -17,6 +17,7 @@
                     md="4"
                   >
                     <v-text-field
+                      id="name"
                       v-model="editedItem.name"
                       label="Produkt Name"
                     ></v-text-field>
@@ -114,6 +115,7 @@
                     md="4"
                   >
                     <v-text-field
+                        id="price"
                         class="my-5"
                         v-model="editedItem.regular_price"
                         label="Preis (€)"
@@ -455,6 +457,20 @@ export default {
         ],
     }),
     methods: {
+      getEanData(ean) {
+        axios.post('https://bindis.rezept-zettel.de/api/scrape', {
+          "ean": ean
+        })
+        .then(res => {
+          document.getElementById('name').value = res.data.name;
+          this.editedItem.name = res.data.name;
+          document.getElementById('price').value = res.data.price.split(",").join(".").split("€").join("");
+          this.editedItem.regular_price = res.data.price.split(",").join(".").split("€").join("");
+        })
+        .catch(err => {
+          console.log(err)
+        })
+      },
       Search(suche) {
         if(suche.length > 0) {
           this.scans = this.backupScans.filter((scan) => {
@@ -551,6 +567,7 @@ export default {
 
         modelDialog(item) {
           this.dialog = true
+          this.getEanData(item.EAN)
           this.editedItem.ean_code = item.EAN
           this.editedItem.stock_quantity = item.Anzahl
         },
