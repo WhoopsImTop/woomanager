@@ -1,6 +1,60 @@
 <template>
     <div>
       <v-dialog
+        v-model="lastEditedPopup"
+        max-width="500px"
+      >
+        <v-card        
+        class="glass2"
+        dark
+        >
+          <v-card-title>Zuletzt Bearbeitet</v-card-title>
+          <v-card-text>
+            <v-list dark class="glass2">
+              <v-list-item v-for="item in lastEdited" :key="item.id">
+                <v-list-item-content>
+                  <v-list-item-title>EAN: {{ item.EAN }}</v-list-item-title>
+                  <v-list-item-subtitle>Bearbeiter: {{ item.Assignee }}</v-list-item-subtitle>
+                  <v-list-item-subtitle>Datum:  {{ new Date(item.TimeStamp).getDate() }}.{{ new Date(item.TimeStamp).getMonth() }}</v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="red darken-1" text @click="lastEditedPopup = false">Schließen</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+
+      <v-dialog
+        v-model="nameDialog"
+        persistent
+        max-width="500px"
+      >
+        <v-card        
+        class="glass2"
+        dark
+        >
+          <v-card-title>Name des Bearbeiters</v-card-title>
+          <v-card-text>
+            <v-text-field
+              v-model="bearbeiterName"
+              label="Name"
+              required
+            ></v-text-field>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="blue darken-1" text @click="addBearbeiterName">Hinzufügen</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+
+
+      <v-dialog
           v-model="dialog"
         >
           <v-card class="glass2" dark>
@@ -288,6 +342,21 @@
             <v-tooltip bottom>
                 <template v-slot:activator="{ on, attrs }">
                     <v-btn
+                    @click="getLastEdited()"
+                    icon
+                    link
+                    dark
+                    v-bind="attrs"
+                    v-on="on"
+                    >
+                    <v-icon>mdi-playlist-check</v-icon>
+                    </v-btn>
+                </template>
+                <span>Zuletzt Bearbeitet</span>
+            </v-tooltip>
+            <v-tooltip bottom>
+                <template v-slot:activator="{ on, attrs }">
+                    <v-btn
                     @click="GetData()"
                     icon
                     link
@@ -377,6 +446,8 @@ import imageCompression from 'browser-image-compression';
 export default {
     data: () =>  ({
         dialog: false,
+        nameDialog: localStorage.getItem('userName') ? false : true,
+        bearbeiterName: "",
         scans: [],
         backupScans: [],
         Statuses: ["Bitte Aufnehmen", "nicht gefunden", "Später"],
@@ -441,6 +512,8 @@ export default {
         },
         btnText: "Speichern",
         btnColor: "primary",
+        lastEdited: [],
+        lastEditedPopup: false,
         status: {
             name: "Entwurf",
             value: "draft"
@@ -457,6 +530,21 @@ export default {
         ],
     }),
     methods: {
+      getLastEdited() {
+        this.lastEditedPopup = true;
+        axios
+        .get('https://bindis.rezept-zettel.de/api/deleted')
+        .then(response => {
+            this.lastEdited = response.data.reverse()
+        })
+        .catch(error => {
+            console.log(error)
+        })
+      },
+      addBearbeiterName() {
+        localStorage.setItem('userName', this.bearbeiterName)
+        this.nameDialog = false
+      },
       getEanData(ean) {
         axios.post('https://bindis.rezept-zettel.de/api/scrape', {
           "ean": ean
@@ -601,7 +689,10 @@ export default {
         
         deleteItemConfirm() {
             axios
-            .delete('https://bindis.rezept-zettel.de/api/scans/' + this.deleteItem._id)
+            .delete('https://bindis.rezept-zettel.de/api/scans/' + this.deleteItem._id,
+            {
+              Assignee: localStorage.getItem("userName")
+            })
                .then(response => {
                 console.log(response)
                 this.GetData()

@@ -78,11 +78,19 @@
           </v-btn>
         </v-col>
       </v-row>
+      <v-row>
+        <v-col id="chart">
+          <apexchart type="line" height="350" :options="chartOptions" :series="series"></apexchart>
+        </v-col>
+      </v-row>
   </div>
 </template>
 
 <script>
 import exportCSV from '../helpers/excelExporter'
+import VueApexCharts from 'vue-apexcharts'
+import axios from 'axios'
+
 export default {
   name: 'Home',
   data: () => {
@@ -104,8 +112,36 @@ export default {
         "EAN",
         "Artikelnummer",
         "Link",
-      ]
+      ],
+      series: [{
+        name: 'Anfragen',
+        data: []
+      },],
+      chartOptions: {
+          chart: {
+            height: 350,
+            type: 'area'
+          },
+          dataLabels: {
+            enabled: false
+          },
+          stroke: {
+            curve: 'smooth'
+          },
+          xaxis: {
+            type: 'datetime',
+            categories: []
+          },
+          tooltip: {
+            x: {
+            format: 'dd/MM/yy HH:mm'
+          },
+        }
+      },
     }
+  },
+  components: {
+    apexchart: VueApexCharts
   },
   computed: {
     getOutOfStock() {
@@ -116,6 +152,19 @@ export default {
     }
   },
   methods: {
+    init() {
+      axios
+      .get('https://bindis.rezept-zettel.de/api/requests/')
+      .then(
+        response => {
+          for(let i = 0; i < response.data.length; i++) {
+            this.chartOptions.xaxis.categories.push(response.data[i].time)
+            this.series[0].data.push(response.data[i].request)
+          }
+          this.chartOptions.tooltip.x.format = 'dd/MM/yy HH:mm'
+        }
+      )
+    },
     async ExportSold() {
       let fields = this.selectedFields
       let colArray = [];
@@ -271,6 +320,9 @@ export default {
       }
     return data
     }
+  },
+  beforeMount() {
+    this.init()
   }
 }
 </script>
