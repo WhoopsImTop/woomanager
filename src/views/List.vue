@@ -691,7 +691,9 @@ export default {
             axios
             .delete('https://bindis.rezept-zettel.de/api/scans/' + this.deleteItem._id,
             {
-              "Assignee": localStorage.getItem("userName")
+              data: {
+                "Assignee": localStorage.getItem("userName")
+              }
             })
                .then(response => {
                 console.log(response)
