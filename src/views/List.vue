@@ -665,9 +665,13 @@ export default {
             await axios
             .get('https://bindis.rezept-zettel.de/api/scans')
             .then(response => {
-                this.scans = response.data
-                this.backupScans = response.data
-                this.scanBackup = response.data
+                let data;
+                data = response.data.sort((a, b) => {
+                  return new Date(a.TimeStamp) - new Date(b.TimeStamp)
+                })
+                this.scans = data.reverse()
+                this.backupScans = data.reverse()
+                this.scanBackup = data.reverse()
                 this.loading = false
             })
             .catch((e) => {
