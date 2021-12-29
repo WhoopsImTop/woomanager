@@ -340,6 +340,12 @@ export default {
           active: true,
         },
         {
+          name: "Bitte Aufnehmen",
+          to: "/add",
+          icon: "./static/add.svg",
+          active: true,
+        },
+        {
           name: "Scan Liste",
           to: "/list",
           icon: "./static/list.svg",
@@ -609,7 +615,10 @@ export default {
     this.getData()
     this.getFromLocalStorage();
     if(localStorage.getItem('nav')) {
-      this.links = JSON.parse(localStorage.getItem('nav'))
+      let savedNav = JSON.parse(localStorage.getItem('nav'))
+      for(let i = 0; i < savedNav.length; i++) {
+          this.links[i].active = savedNav[i].active
+      }
     }
     if (this.$workbox) {
       this.$workbox.addEventListener("waiting", () => {

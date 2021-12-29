@@ -29,7 +29,6 @@
       </v-card>
     </v-dialog>
 
-
       <h1 style="margin: 20px 0">Barcodescanner</h1>
       <v-row class="h-full">
           <v-col 
@@ -47,13 +46,6 @@
                 <template v-slot:top>
                     <div style="position: relative; display: flex; height: 50px; align-items: center">
                     <v-chip v-show="searchEANText != ''" class="glass" color="green">{{ searchEANText }}</v-chip>
-                    <v-switch
-                        style="position: absolute; right: 0px"
-                        v-model="aufnahme"
-                        inset
-                        color="accent"
-                        label="Produkte bitte aufnehmen"
-                    ></v-switch>
                     </div>
                 </template>
                 
@@ -68,7 +60,6 @@
             </v-data-table>
           </v-col>
           <v-col
-          v-if="!this.aufnahme"
           cols="2"
           style="position: relative; display: flex; flex-direction: column; background-color:#efefef; text-align: center; color: #353535"
           >
@@ -84,28 +75,6 @@
               <hr>
                 <span style="font-family: monospace">Gesamt: {{ countPrices }}€</span>
               </div>
-          </v-col>
-          
-          <v-col
-          v-else
-          cols="2"
-          >
-            <v-card
-            class="glass"
-            dark
-            >
-              <v-card-title>
-                <span class="headline">Aufzunehmende Scans</span>
-              </v-card-title>
-              <v-card-text>
-                <v-list class="glass2">
-                    <v-list-item v-for="item in ScannedList" :key="item._id">
-                        <v-list-item-title>{{ item.EAN }}</v-list-item-title>
-                        <v-list-item-action><v-btn icon><v-icon small>mdi-delete</v-icon></v-btn></v-list-item-action>
-                    </v-list-item>
-                </v-list>
-              </v-card-text>
-            </v-card>
           </v-col>
       </v-row>
   </div>
@@ -130,7 +99,6 @@ export default {
             itemsPerPage: 10,
             loading: false,
             suche: '',
-            aufnahme: false,
             searchParam: '',
             foundScans: [],
             searchEANText: '',
@@ -164,44 +132,28 @@ export default {
 
                 let index = this.$store.state.products.findIndex(x => x.ean_code === Search);
                 if(Search != '') {
-                    if(this.aufnahme === false) {
-                        if(index != -1) {
-                            this.searchEANText = 'Produkt gefunden'
-                            this.scans.push({
-                                "Id": this.$store.state.products[index].id,
-                                "EAN": Search,
-                                "Status": "gefunden",
-                                "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                            })
-                            this.foundScans.push(this.$store.state.products[index])
-                            this.ReduceProduct(this.$store.state.products[index].id, this.$store.state.products[index].stock_quantity)
-                        } else {
-                            this.searchEANText = 'Produkt nicht gefunden'
-                            let check = await this.serverProductChecker(Search);
-                            if(!check) {
-                            this.scans.push({
-                                "Id": guidGenerator(),
-                                "EAN": Search,
-                                "Status": "Nicht gefunden",
-                                "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                            })
-                            this.SaveItem(Search, "nicht gefunden")
-                            }
-                        }
+                    if(index != -1) {
+                        this.searchEANText = 'Produkt gefunden'
+                        this.scans.push({
+                            "Id": this.$store.state.products[index].id,
+                            "EAN": Search,
+                            "Status": "gefunden",
+                            "TimeStamp": timestamp('DD.MM HH:mm:ss')
+                        })
+                        this.foundScans.push(this.$store.state.products[index])
+                        this.ReduceProduct(this.$store.state.products[index].id, this.$store.state.products[index].stock_quantity)
                     } else {
-                        axios
-                        .post('https://bindis.rezept-zettel.de/api/scans', {
+                        this.searchEANText = 'Produkt nicht gefunden'
+                        let check = await this.serverProductChecker(Search);
+                        if(!check) {
+                        this.scans.push({
+                            "Id": guidGenerator(),
                             "EAN": Search,
-                            "Status": "Bitte Aufnehmen",
+                            "Status": "Nicht gefunden",
                             "TimeStamp": timestamp('DD.MM HH:mm:ss')
                         })
-                        .then(() => {
-                            this.ScannedList.push({
-                            "EAN": Search,
-                            "Status": "Bitte Aufnehmen",
-                            "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                            })
-                        })
+                        this.SaveItem(Search, "nicht gefunden")
+                        }
                     }
                 }
                 setTimeout(() => {
