@@ -1,5 +1,5 @@
 <template>
-  <div id="scanner">
+  <div>
     <v-dialog
       v-model="dialog"
       persistent
@@ -120,7 +120,6 @@ export default {
     },
     methods: {
         async init() {
-            let scan = document.getElementById('scanner')
             try{
                 onScan.attachTo(document);
             }
@@ -128,7 +127,7 @@ export default {
                 console.log(e)
             }
             // Register event listener
-            scan.addEventListener('scan', async(e) => {
+            document.addEventListener('scan', async(e) => {
                 let Search = e.detail.scanCode;
 
                 let index = this.$store.state.products.findIndex(x => x.ean_code === Search);
