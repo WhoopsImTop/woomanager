@@ -1,6 +1,17 @@
 <template>
   <div>
     <h1 style="margin: 20px 0">Bitte Aufnehmen</h1>
+    <v-sheet class="glass mb-3" style="display: flex; flex-direction: row; justify-content: center; align-items: center">
+      <v-text-field
+        id="search"
+        class="mt-6 ml-3 mr-3"
+        dark
+        v-model="Search"
+        label="Suche"
+        outlined
+        @input="onScan"
+      ></v-text-field>
+    </v-sheet>
     <v-list
         v-if="ScannedList.length > 0"
         class="glass"
@@ -55,7 +66,6 @@
 </template>
 
 <script>
-import onScan from 'onscan.js'
 import axios from 'axios'
 import timestamp from 'time-stamp'
 
@@ -75,45 +85,47 @@ export default {
             selectedItem: [],
             ScannedList: [],
             FailedScanList: [],
+            Search: ''
         }
     },
     methods: {
-        async init() {
-            try{
-                onScan.attachTo(document);
-            }
-            catch(e) {
-                console.log(e)
-            }
-            document.addEventListener('scan', async(e) => {
-                let Search = e.detail.scanCode;
+        onScan() {
+          if(this.Search.length > 6) {
+            setTimeout(() => {
+              this.handleScanSearch(this.Search)
+              this.Search = ''
+            }, 200)
+          } 
+        },
+        handleScanSearch(EAN) {
+          if(EAN != "") {
+          axios
+            .post('https://bindis.rezept-zettel.de/api/scans', {
+              "EAN": EAN,
+              "Status": "Bitte Aufnehmen",
+              "TimeStamp": timestamp('DD.MM HH:mm:ss')
+            })
+            .then(response => {
+              if(response.data.EAN != undefined) {
+              this.addToList(response.data)
+              } else {
                 axios
-                .post('https://bindis.rezept-zettel.de/api/scans', {
-                    "EAN": Search,
-                    "Status": "Bitte Aufnehmen",
-                    "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                })
+                .get('https://bindis.rezept-zettel.de/api/scans/' + EAN)
                 .then(response => {
-                  if(response.data.EAN != undefined) {
-                    this.addToList(response.data)
-                  } else {
-                    axios
-                    .get('https://bindis.rezept-zettel.de/api/scans/' + Search)
-                    .then(response => {
-                        this.addToList(response.data)
-                    })
-                  }
+                  this.addToList(response.data)
                 })
-                .catch(error => {
-                    console.log(error)
-                    this.FailedScanList.push({
-                      "EAN": Search,
-                      "Status": "Bitte Aufnehmen",
-                      "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                    })
-                    localStorage.setItem('FailedScanList', JSON.stringify(this.FailedScanList))
-                })
-            });
+              }
+              })
+            .catch(error => {
+              console.log(error)
+              this.FailedScanList.push({
+                "EAN": EAN,
+                "Status": "Bitte Aufnehmen",
+                "TimeStamp": timestamp('DD.MM HH:mm:ss')
+              })
+                localStorage.setItem('FailedScanList', JSON.stringify(this.FailedScanList))
+            })
+          }
         },
         addToList(data) {
           //check if item is already in list
@@ -160,13 +172,10 @@ export default {
         })
       },
     },
-    created() {
-        this.init();
+    mounted() {
+        document.getElementById('search').focus()
         this.FailedScanList = JSON.parse(localStorage.getItem('FailedScanList'))
-    },
-    beforeDestroy() {
-        onScan.detachFrom(document);
-    },
+    }
 }
 </script>
 

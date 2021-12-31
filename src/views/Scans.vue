@@ -245,10 +245,7 @@ export default {
     },
     created() {
         this.init();
-    },
-    beforeDestroy() {
-        onScan.detachFrom(document);
-    },
+    }
 }
 </script>
 

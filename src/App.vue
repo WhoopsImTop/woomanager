@@ -292,6 +292,7 @@
 
 <script>
 import axios from 'axios'
+import onScan from 'onscan.js'
 
 export default {
   data:() => {
@@ -368,6 +369,15 @@ export default {
       showUpdateUI: false,
       orders: [],
       showLatestEdited: false,
+    }
+  },
+  watch: {
+    async $route(to, from) {
+      if(from.path == "/add" || from.path == "/scanner") {
+        console.log("Detaching")
+        await onScan.detachFrom(document);
+        console.log("Detached")
+      }
     }
   },
   computed: {
