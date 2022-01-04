@@ -629,7 +629,7 @@ export default {
     }
   },
   created() {
-    this.$store.state.socket = io('http://localhost:3001');
+    this.$store.state.socket = io('https://bindis.rezept-zettel.de');
     this.$store.state.socket.on("connect", () => this.$store.state.socket.emit("hello", localStorage.getItem('userName') || 'Geschäft'));
 
     this.$store.state.socket.on("initialTodoLoad", Todos => {console.log(Todos)});
