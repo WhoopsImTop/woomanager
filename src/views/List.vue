@@ -734,8 +734,6 @@ export default {
         
         UpdateStatus() {
           let NewStatus = this.newStatus
-          let Selected = this.$store.state.selectedScans
-          console.log(Selected)
           for(var i = 0; i < this.$store.state.selectedScans.length; i++) {
             axios
             .patch('https://bindis.rezept-zettel.de/api/scans/' + this.$store.state.selectedScans[i]._id, {
@@ -820,6 +818,43 @@ export default {
     async created() {
         this.GetData()
         this.initialize()
+        this.$store.state.socket.on('deleteTodo', (data) => {
+          let exists = -1
+          for(var i = 0; i < this.scans.length; i++) {
+            if(this.scans[i]._id === data._id) {
+              exists = i
+            }
+          }
+          if(exists !== -1) {
+            this.scans.splice(exists, 1)
+          }
+        })
+        this.$store.state.socket.on('updateTodo', (data) => {
+          let exists = -1
+          for(var i = 0; i < this.scans.length; i++) {
+            if(this.scans[i]._id === data._id) {
+              exists = i
+            }
+          }
+          if(exists !== -1) {
+            this.scans[exists].Anzahl = data.Anzahl
+          }
+        })
+        this.$store.state.socket.on('addTodo', async (data) => {
+          // check if item already exists in scans array
+          let exists = -1
+          for(var i = 0; i < this.scans.length; i++) {
+            if(this.scans[i]._id === data._id) {
+              exists = i
+            }
+          }
+
+          if(exists === -1) {
+            this.scans.unshift(data)
+          } else {
+            this.scans[exists].Anzahl = data.Anzahl
+          }
+        })
     }
 }
 </script>

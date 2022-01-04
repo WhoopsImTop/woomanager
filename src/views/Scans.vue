@@ -47,6 +47,7 @@
                     <div style="position: relative; display: flex; height: 50px; align-items: center">
                     <v-chip v-show="searchEANText != ''" class="glass" color="green">{{ searchEANText }}</v-chip>
                     </div>
+                    <v-btn v-show="routeParams" @click="testEmit()">TestScan</v-btn>
                 </template>
                 
               <template v-slot:item.actions="{ item }">
@@ -83,8 +84,7 @@
 <script>
 import onScan from 'onscan.js'
 import axios from 'axios'
-import timestamp from 'time-stamp'
-import guidGenerator from '../helpers/uid'
+
 export default {
     data:() => {
         return {
@@ -104,7 +104,10 @@ export default {
             searchEANText: '',
             dialog: false,
             selectedItem: [],
-            ScannedList: []
+            ScannedList: [],
+            failedUploadScans: [],
+            eanCode: '',
+            statusCode: '',
         }
     },
     computed: {
@@ -116,6 +119,15 @@ export default {
                 }
             }
             return price
+        },
+        routeParams() {
+            let value = false
+            if(this.$route.query.debug) {
+                value = true
+            } else {
+                value = false
+            }
+            return value 
         }
     },
     methods: {
@@ -134,24 +146,12 @@ export default {
                 if(Search != '') {
                     if(index != -1) {
                         this.searchEANText = 'Produkt gefunden'
-                        this.scans.push({
-                            "Id": this.$store.state.products[index].id,
-                            "EAN": Search,
-                            "Status": "gefunden",
-                            "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                        })
                         this.foundScans.push(this.$store.state.products[index])
                         this.ReduceProduct(this.$store.state.products[index].id, this.$store.state.products[index].stock_quantity)
                     } else {
                         this.searchEANText = 'Produkt nicht gefunden'
                         let check = await this.serverProductChecker(Search);
                         if(!check) {
-                        this.scans.push({
-                            "Id": guidGenerator(),
-                            "EAN": Search,
-                            "Status": "Nicht gefunden",
-                            "TimeStamp": timestamp('DD.MM HH:mm:ss')
-                        })
                         this.SaveItem(Search, "nicht gefunden")
                         }
                     }
@@ -172,8 +172,7 @@ export default {
                     this.scans.push({
                         "Id": data[0].id,
                         "EAN": data[0].ean_code,
-                        "Status": "gefunden",
-                        "TimeStamp": timestamp('DD.MM HH:mm:ss')
+                        "Status": "gefunden"
                     })
                     this.$store.state.products.push(data[0])
                     this.ReduceProduct(data[0].id, data[0].stock_quantity)
@@ -182,36 +181,30 @@ export default {
                     return false
                 }
         },
-        SaveItem(ean, status) {
-            axios
-            .post('https://bindis.rezept-zettel.de/api/scans', {
-                "EAN": ean,
-                "Status": status,
-                "TimeStamp": timestamp('DD.MM. HH:mm:ss')
-            })
-            .catch((e) => {
-                console.log(e)
+        testEmit() {
+          onScan.simulate(document, '1234567890123');
+        },
+        async SaveItem(ean, status) {
+            this.eanCode = ean
+            this.statusCode = status
+            this.$store.state.socket.emit('addTodo', {
+                "EAN": this.eanCode,
+                "Status": this.statusCode,
             })
         },
         removeItem() {
-            let table = this.scans
             if(this.selectedItem.Status === "gefunden") {
                 this.CountUpProduct(this.selectedItem.Id)
             }
             this.scannedArticles--
-            var outputArray = []
-            let foundCount = 0
-            const searchValue = this.selectedItem.Id
-            for(let i = 0; i < table.length; i++) {
-                if(table[i].Id===searchValue && foundCount===0)
-                {
-                    foundCount++
-                } else {
-                    outputArray.push(table[i])
+            this.$store.state.socket.emit('updateTodo', this.selectedItem)
+            //remove selected from table
+            for(let i = 0; i < this.scans.length; i++) {
+                if(this.scans[i].TimeStamp === this.selectedItem.TimeStamp) {
+                    this.scans.splice(i, 1)
+                    break
                 }
             }
-            this.scans = outputArray
-            this.SelectSearch()
             this.dialog = false
         },
         removeProduct(item) {
@@ -244,6 +237,49 @@ export default {
         },
     },
     created() {
+        this.$store.state.socket.on('addTodo', (data) => {
+            this.scans.push({
+                "Id": data.Id,
+                "EAN": data.EAN,
+                "Status": data.Status,
+                "TimeStamp": data.TimeStamp
+            })
+        })
+
+        this.$store.state.socket.on('updateTodo', (data) => {
+            this.scans.splice(this.scans.indexOf(data), 1)
+        })
+
+
+        this.$store.state.socket.on('addTodoError', () => {
+            this.failedUploadScans = localStorage.getItem('failedUploadScans') ? JSON.parse(localStorage.getItem('failedUploadScans')) : []
+            this.failedUploadScans.push({
+                "EAN": this.eanCode,
+                "Status": this.statusCode
+            })
+            localStorage.setItem('failedUploadScans', JSON.stringify(this.failedUploadScans))
+            this.eanCode = ""
+            this.statusCode = ""
+        })
+
+            if(localStorage.getItem('failedUploadScans') != null || localStorage.getItem('failedUploadScans') != undefined) {
+                this.failedUploadScans = localStorage.getItem('failedUploadScans')
+                this.failedUploadScans = JSON.parse(this.failedUploadScans)
+                // Upload items in array
+                for(let i = 0; i < this.failedUploadScans.length; i++) {
+                    axios
+                    .post('https://bindis.rezept-zettel.de/api/scans', {
+                        "EAN": this.failedUploadScans[i].EAN,
+                        "Status": this.failedUploadScans[i].Status
+                    })
+                    .then(() => {
+                        // remove item from array
+                        this.failedUploadScans.splice(i, 1)
+                        localStorage.setItem('failedUploadScans', JSON.stringify(this.failedUploadScans))
+                    })
+                }
+            }
+
         this.init();
     }
 }

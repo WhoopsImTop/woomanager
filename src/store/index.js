@@ -16,6 +16,8 @@ export default new Vuex.Store({
     imageToken: '',
     selectedScanStatus: 'Bitte Auswählen',
     latestEdited: [],
+    socket: null,
+    users: [],
   },
   mutations: {
     addToList (state, payload) {

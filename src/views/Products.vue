@@ -7,7 +7,7 @@
       <v-data-table
         dark
         :headers="headers"
-        :items="products"
+        :items="searchProducts"
         item-key="id"
         sort-by="calories"
         class="elevation-1 glass"
@@ -31,7 +31,6 @@
               outlined
               label="Suche"
               v-model="suche"
-              @input="Search(suche)"
             >
             </v-text-field>
             <v-combobox
@@ -438,6 +437,11 @@ export default {
       formTitle () {
         return this.editedIndex === -1 ? 'Neues Produkt' : 'Produkt bearbeiten'
       },
+      searchProducts() {
+        return this.products.filter(product => {
+          return product.name.toLowerCase().includes(this.suche.toLowerCase()) || product.sku.toLowerCase().includes(this.suche.toLowerCase().replace(/ /g, "")) || product.ean_code.toLowerCase().includes(this.suche.toLowerCase().replace(/ /g, ""));
+        })
+      }
     },
 
     watch: {
@@ -582,16 +586,6 @@ export default {
               this.fileHint = "Bild konnte nicht hochgeladen werden"
             })
         },
-
-      Search(suche) {
-        if(suche.length > 0) {
-          this.products = this.$store.state.products.filter((product) => {
-            return suche.toLowerCase().split(' ').every(v => product.name.toLowerCase().includes(v) || product.ean_code.toLowerCase().includes(v));
-          });
-        } else if(suche.length === 0) {
-          this.products = this.$store.state.products
-        }        
-      },
 
       editItem (item) {
         this.editedIndex = this.products.indexOf(item)

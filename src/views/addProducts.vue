@@ -67,7 +67,6 @@
 
 <script>
 import axios from 'axios'
-import timestamp from 'time-stamp'
 
 export default {
     data:() => {
@@ -99,32 +98,19 @@ export default {
         },
         handleScanSearch(EAN) {
           if(EAN != "") {
-          axios
-            .post('https://bindis.rezept-zettel.de/api/scans', {
-              "EAN": EAN,
-              "Status": "Bitte Aufnehmen",
-              "TimeStamp": timestamp('DD.MM HH:mm:ss')
-            })
-            .then(response => {
-              if(response.data.EAN != undefined) {
-              this.addToList(response.data)
-              } else {
-                axios
-                .get('https://bindis.rezept-zettel.de/api/scans/' + EAN)
-                .then(response => {
-                  this.addToList(response.data)
-                })
-              }
+            try {
+              this.$store.state.socket.emit('addTodo', {
+                EAN: EAN,
+                Status: "Bitte Aufnehmen"
               })
-            .catch(error => {
+            } catch(error) {
               console.log(error)
               this.FailedScanList.push({
                 "EAN": EAN,
-                "Status": "Bitte Aufnehmen",
-                "TimeStamp": timestamp('DD.MM HH:mm:ss')
+                "Status": "Bitte Aufnehmen"
               })
                 localStorage.setItem('FailedScanList', JSON.stringify(this.FailedScanList))
-            })
+            } 
           }
         },
         addToList(data) {
@@ -144,8 +130,7 @@ export default {
               axios
               .post('https://bindis.rezept-zettel.de/api/scans', {
                   "EAN": item.EAN,
-                  "Status": "Bitte Aufnehmen",
-                  "TimeStamp": timestamp('DD.MM HH:mm:ss')
+                  "Status": "Bitte Aufnehmen"
               })
               .then(response => {
                 if(response.data.includes(item.EAN)) {
@@ -175,6 +160,14 @@ export default {
     mounted() {
         document.getElementById('search').focus()
         this.FailedScanList = JSON.parse(localStorage.getItem('FailedScanList'))
+
+        this.$store.state.socket.on('addTodo', (data) => {
+          console.log(data)
+          this.addToList(data)
+          if(localStorage.getItem('FailedScanList')) {
+            this.reUploadItem()
+          }
+        })
     }
 }
 </script>

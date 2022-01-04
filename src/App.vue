@@ -68,6 +68,20 @@
             <v-icon @click="startTimeRecording" small class="ml-4">{{ timeRecordingStatus }}</v-icon>
           </v-chip>
 
+          <div>
+            <v-chip
+              class="mx-2"
+              v-for="user in $store.state.users" :key="user.id"
+              v-show="$store.state.users.length > 0"
+              dark
+              label
+              color="success"
+            >
+              <v-icon small class="mr-4">mdi-account</v-icon>
+              <span>{{ user.name }}</span>
+            </v-chip>
+
+
           <v-btn 
             icon
             dark
@@ -78,6 +92,8 @@
             </v-icon>
           </v-btn>
 
+          </div>          
+          
           <v-dialog
             v-model="showLatestEdited"
             max-width="600px"
@@ -292,7 +308,7 @@
 
 <script>
 import axios from 'axios'
-import onScan from 'onscan.js'
+import io from 'socket.io-client'
 
 export default {
   data:() => {
@@ -369,15 +385,6 @@ export default {
       showUpdateUI: false,
       orders: [],
       showLatestEdited: false,
-    }
-  },
-  watch: {
-    async $route(to, from) {
-      if(from.path == "/add" || from.path == "/scanner") {
-        console.log("Detaching")
-        await onScan.detachFrom(document);
-        console.log("Detached")
-      }
     }
   },
   computed: {
@@ -622,6 +629,19 @@ export default {
     }
   },
   created() {
+    this.$store.state.socket = io('http://localhost:3001');
+    this.$store.state.socket.on("connect", () => this.$store.state.socket.emit("hello", localStorage.getItem('userName') || 'Geschäft'));
+
+    this.$store.state.socket.on("initialTodoLoad", Todos => {console.log(Todos)});
+
+    this.$store.state.socket.on("currentUsers", data => {
+      this.$store.state.users = data
+    });
+
+    this.$store.state.socket.on("removeUser", data => {
+      this.$store.state.users = data
+    });
+
     this.getData()
     this.getFromLocalStorage();
     if(localStorage.getItem('nav')) {

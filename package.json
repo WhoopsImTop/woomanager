@@ -16,6 +16,7 @@
     "core-js": "^3.6.5",
     "onscan.js": "^1.5.2",
     "register-service-worker": "^1.7.1",
+    "socket.io-client": "^4.4.0",
     "time-stamp": "^2.2.0",
     "vue": "^2.6.11",
     "vue-advanced-cropper": "^1.8.2",
