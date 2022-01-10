@@ -717,9 +717,6 @@ export default {
         this.showUpdateUI = true;
       });
     }
-  },
-  beforeDestroy() {
-    this.$store.state.socket.emit("disconnect", localStorage.getItem('userName') || 'Geschäft')
   }
 }
 </script>
