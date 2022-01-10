@@ -1,5 +1,46 @@
 <template>
-  <v-app dark>
+  <v-app dark>  
+      <v-dialog persistent max-width="500" v-model="loading">
+        <v-card dark class="glass2">
+          <v-card-title>
+            Produkte werden geladen
+          </v-card-title>
+          <v-divider class="mb-7"></v-divider>
+          <v-card-text>
+            <v-progress-linear indeterminate color="orange"></v-progress-linear>
+            <div v-if="!error">
+            {{ loadedProducts }} von {{ maxProducts }} Produkten geladen.
+            </div>
+            <div v-else>
+              Beim laden der Produkte is ein Fehler aufgetreten.
+              Bitte wähle unten eine Aktion aus.
+            </div>
+          </v-card-text>
+          <v-divider v-show="error"></v-divider>
+          <v-card-actions v-show="error">
+            <v-btn text color="red" @click="error = false">Trotzdem arbeiten</v-btn>
+            <v-btn color="success" @click="location.reload()">Nochmal versuchen</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+      <v-dialog persistent max-width="500" dark v-model="offline">
+        <v-card class="glass" dark>
+          <v-card-title>
+            Du hast die Internetverbindung verloren
+          </v-card-title>
+          <v-divider class="mb-4"></v-divider>
+          <v-card-text>
+            Bitte stelle sicher, dass du mit dem Internet verbunden bist.
+            <v-spacer class="my-5"></v-spacer>
+            <v-progress-linear
+              indeterminate
+              color="red"
+              class="mb-0"
+            ></v-progress-linear>
+            <span>Das Popup verschwindet wenn du wieder verbunden bist</span>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
     <v-dialog 
      persistent
      max-width="285px"
@@ -385,6 +426,11 @@ export default {
       showUpdateUI: false,
       orders: [],
       showLatestEdited: false,
+      loading: false,
+      maxProducts: 0,
+      loadedProducts: 0,
+      offline: false,
+      error: false,
     }
   },
   computed: {
@@ -526,26 +572,33 @@ export default {
       this.settingDialog = false
     },
     getData() {
+      this.loading = true
       axios
       .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=1`)
       .then(res => {
+        this.maxProducts = res.headers["x-wp-total"]
         let page = res.headers["x-wp-totalpages"]
-        for(let i = 1; i <= page - 1; i++) {
+        for(let i = 1; i <= page; i++) {
           axios
           .get(`${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem('ck')}&consumer_secret=${localStorage.getItem('cs')}&per_page=100&page=${i}`)
           .then(res => {
             for(let x = 0; x < res.data.length; x++) {
+              this.loadedProducts++
               if(res.data[x].name != "") {
                 this.$store.state.products.push(res.data[x])
               }
               if(res.data[x].stock_quantity <= 0 && res.data[x].manage_stock == true && res.data[x].name != "") {
                 this.$store.state.outOfStock.push(res.data[x])
               }
+              if(this.loadedProducts == this.maxProducts && this.loadedProducts != 0 && this.maxProducts != 0) {
+                this.loading = false
+              }
             }
           })
         }
       })
       .catch((e) => {
+        this.error = true
         console.log(e)
       })
       axios
@@ -563,6 +616,7 @@ export default {
         }
       })
       .catch((e) => {
+        this.error = true
         console.log(e)
       })
       axios
@@ -580,6 +634,7 @@ export default {
         }
       })
       .catch((e) => {
+        this.error = true
         console.log(e)
       })
       axios
@@ -650,11 +705,21 @@ export default {
           this.links[i].active = savedNav[i].active
       }
     }
+    setInterval(() => {
+      if(navigator.onLine) {
+        this.offline = false
+      } else {
+        this.offline = true
+      }
+    }, 200)
     if (this.$workbox) {
       this.$workbox.addEventListener("waiting", () => {
         this.showUpdateUI = true;
       });
     }
+  },
+  beforeDestroy() {
+    this.$store.state.socket.emit("disconnect", localStorage.getItem('userName') || 'Geschäft')
   }
 }
 </script>
@@ -774,5 +839,21 @@ export default {
 
 .left-bar-btn {
   transition: .3s ease-in-out;
+}
+
+.overlay-container {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  bottom: 0px;
+  right: 0px;
+  background: rgb(35, 35, 43) !important;
+  z-index: 999;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
 }
 </style>
