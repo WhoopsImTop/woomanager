@@ -44,10 +44,22 @@
                 class="elevation-1 glass"
                 >
                 <template v-slot:top>
+                    <div class="col" style="position: relative">
+                        <v-text-field
+                            id="EANScanner"
+                            v-model="searchParam"
+                            label="Suche"
+                            color="success"
+                            class="mt-2"
+                            @input="onScan"
+                            :error="fieldSelected"
+                            outlined
+                        ></v-text-field>
+                        <span style="position: absolute; top: 80px; color: #ff5252">{{ fieldhint }}</span>
+                    </div>
                     <div style="position: relative; display: flex; height: 50px; align-items: center">
                     <v-chip v-show="searchEANText != ''" class="glass" color="green">{{ searchEANText }}</v-chip>
                     </div>
-                    <v-btn v-show="routeParams" @click="testEmit()">TestScan</v-btn>
                 </template>
                 
               <template v-slot:item.actions="{ item }">
@@ -82,7 +94,6 @@
 </template>
 
 <script>
-import onScan from 'onscan.js'
 import axios from 'axios'
 
 export default {
@@ -108,6 +119,8 @@ export default {
             failedUploadScans: [],
             eanCode: '',
             statusCode: '',
+            fieldSelected: true,
+            fieldhint: 'Ich bin nicht ausgewählt'
         }
     },
     computed: {
@@ -131,18 +144,17 @@ export default {
         }
     },
     methods: {
-        async init() {
-            try{
-                onScan.attachTo(document);
-            }
-            catch(e) {
-                console.log(e)
-            }
-            // Register event listener
-            document.addEventListener('scan', async(e) => {
-                let Search = e.detail.scanCode;
+        onScan() {
+          if(this.searchParam.length > 6) {
+            setTimeout(() => {
+              this.Scan(this.searchParam)
+              this.searchParam = ''
+            }, 200)
+          } 
+        },
+        async Scan(Search) {
 
-                let index = this.$store.state.products.findIndex(x => x.ean_code === Search);
+            let index = await this.$store.state.products.findIndex(x => x.ean_code === Search);
                 if(Search != '') {
                     if(index != -1) {
                         this.searchEANText = 'Produkt gefunden'
@@ -156,10 +168,9 @@ export default {
                         }
                     }
                 }
-                setTimeout(() => {
-                    this.searchEANText = ''
-                }, 1000)
-            });
+            setTimeout(() => {
+                this.searchEANText = ''
+            }, 1000)
         },
         async serverProductChecker(id) {
             let data = await axios
@@ -180,9 +191,6 @@ export default {
                 } else {
                     return false
                 }
-        },
-        testEmit() {
-          onScan.simulate(document, '1234567890123');
         },
         async SaveItem(ean, status) {
             this.eanCode = ean
@@ -236,7 +244,17 @@ export default {
             })
         },
     },
-    created() {
+    mounted() {
+        let EANScanner = document.getElementById('EANScanner')
+        EANScanner.addEventListener('blur', () => {
+            this.fieldSelected = true
+            this.fieldhint = "Ich bin nicht ausgewählt"
+            EANScanner.focus()
+        })
+        EANScanner.addEventListener('focus', () => {
+            this.fieldSelected = false
+            this.fieldhint = ""
+        })
         this.$store.state.socket.on('addTodo', (data) => {
             this.scans.push({
                 "Id": data.Id,
@@ -245,6 +263,10 @@ export default {
                 "TimeStamp": data.TimeStamp
             })
         })
+
+        setTimeout(() => {
+            EANScanner.focus()
+        }, 1000)
 
         this.$store.state.socket.on('updateTodo', (data) => {
             this.scans.splice(this.scans.indexOf(data), 1)
@@ -279,8 +301,6 @@ export default {
                     })
                 }
             }
-
-        this.init();
     }
 }
 </script>
