@@ -110,17 +110,27 @@
           </v-chip>
 
           <div>
-            <v-chip
-              class="mx-2"
+            <v-tooltip 
+              bottom
               v-for="user in $store.state.users" :key="user.id"
               v-show="$store.state.users.length > 0"
-              dark
-              label
-              color="success"
-            >
-              <v-icon small class="mr-4">mdi-account</v-icon>
-              <span>{{ user.name }}</span>
-            </v-chip>
+              >
+              <template v-slot:activator="{ on, attrs }">
+                <v-chip
+                  class="mx-2"
+                  dark
+                  label
+                  v-bind="attrs"
+                  v-on="on"
+                  color="success"
+                >
+                  <v-icon small class="mr-4">mdi-account</v-icon>
+                  <span>{{ user.name }}</span>
+                </v-chip>
+              </template>
+              <span>{{ wichPath(user.url) }}</span>
+            </v-tooltip>
+            
 
 
           <v-btn 
@@ -408,6 +418,12 @@ export default {
           to: "/list",
           icon: "./static/list.svg",
           active: true,
+        },
+        {
+          name: "Arbeitszeit",
+          to: "/workTime",
+          icon: "./static/clock.svg",
+          active: false,
         }
       ],
       workTimeRecording: false,
@@ -660,6 +676,26 @@ export default {
         this.getOrders()
       }, 1000 * 60 * 5)
     },
+    wichPath(path) {
+      switch(path) {	
+        case '/':
+          return 'home'
+        case '/orders':
+          return 'Bestellungen'
+        case '/products':
+          return 'Produkte'
+        case '/categories':
+          return 'Kategorien'
+        case '/tags':
+          return 'Tags'
+        case '/scanner':
+          return 'Verkauf'
+        case '/add':
+          return 'Bitte Aufnehmen'
+        case '/list':
+          return 'Tagesliste'
+      }
+    },
     CheckConnection() {
       this.btnLoading = true
       axios
@@ -683,9 +719,17 @@ export default {
       })
     }
   },
+  watch:{
+    $route (to, from){
+      this.$store.state.socket.emit("urlChange", to.path)
+      from
+    }
+  },
   created() {
+    this.$store.state.startTime = new Date().toTimeString().split(" ")[0]
+    console.log(new Date().toTimeString())
     this.$store.state.socket = io('https://bindis.rezept-zettel.de');
-    this.$store.state.socket.on("connect", () => this.$store.state.socket.emit("hello", localStorage.getItem('userName') || 'Geschäft'));
+    this.$store.state.socket.on("connect", () => this.$store.state.socket.emit("hello", { name: localStorage.getItem('userName') || 'Geschäft', url: this.$route.path}));
 
     this.$store.state.socket.on("initialTodoLoad", Todos => {console.log(Todos)});
 

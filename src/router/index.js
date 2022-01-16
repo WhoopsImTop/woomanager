@@ -8,6 +8,7 @@ import Tags from '../views/Tags.vue'
 import List from '../views/List.vue'
 import Orders from '../views/Orders.vue'
 import addProducts from '../views/addProducts.vue'
+import workTimeRecording from '../views/workTimeRecording.vue'
 
 Vue.use(VueRouter)
 
@@ -51,6 +52,11 @@ const routes = [
     path: '/add',
     name: 'addProducts',
     component: addProducts
+  },
+  {
+    path: '/workTime',
+    name: 'workTimeRecording',
+    component: workTimeRecording
   },
 ]
 

@@ -18,6 +18,9 @@ export default new Vuex.Store({
     latestEdited: [],
     socket: null,
     users: [],
+    workTime: 0,
+    startTime: null,
+    endTime: null,
   },
   mutations: {
     addToList (state, payload) {
