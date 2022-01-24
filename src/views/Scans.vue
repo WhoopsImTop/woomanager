@@ -255,7 +255,7 @@ export default {
       this.selectedItem = item;
       this.dialog = true;
     },
-    ReduceProduct: function (id, stock_quantity) {
+    async ReduceProduct (id, stock_quantity) {
       let newStock = stock_quantity - 1;
       axios.post(
         "https://bindis-schaulaedle.de/wp-json/wc/v3/products/" +
@@ -265,6 +265,10 @@ export default {
           stock_quantity: newStock,
         }
       );
+      let index = await this.$store.state.products.findIndex(
+        (x) => x.id === id
+      );
+      this.$store.state.products[index].stock_quantity = newStock;
     },
     CountUpProduct: function (ID) {
       axios
