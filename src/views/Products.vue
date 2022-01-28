@@ -437,9 +437,10 @@ export default {
       formTitle () {
         return this.editedIndex === -1 ? 'Neues Produkt' : 'Produkt bearbeiten'
       },
-      searchProducts() {
+    searchProducts() {
         return this.products.filter(product => {
-          return product.name.toLowerCase().includes(this.suche.toLowerCase()) || product.sku.toLowerCase().includes(this.suche.toLowerCase().replace(/ /g, "")) || product.ean_code.toLowerCase().includes(this.suche.toLowerCase().replace(/ /g, ""));
+          let searchName = this.suche.toLowerCase().substring(0, this.suche.length);
+          return product.name.toLowerCase().includes(searchName) || this.checkName(product.name, searchName) || product.sku.toLowerCase().includes(this.suche.toLowerCase().replace(/ /g, "")) || product.ean_code.toLowerCase().includes(this.suche.toLowerCase().replace(/ /g, ""));
         })
       }
     },
@@ -458,6 +459,14 @@ export default {
     },
 
     methods: {
+      checkName(name, str) {
+        var pattern = str.split("").map((x) => {
+          return `(?=.*${x})`
+        }).join("");
+
+        let regex = new RegExp(pattern, "i");
+        return name.match(regex);
+      },
       init() {
         this.products = this.$store.state.products
         //sort products by date
