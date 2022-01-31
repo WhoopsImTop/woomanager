@@ -62,7 +62,7 @@ import 'vue-advanced-cropper/dist/style.css';
 import imageCompression from 'browser-image-compression';
 
 export default {
-    props: ['imagePopup'],
+    props: ['imagePopup', 'imgLoading'],
     components: {
         Cropper
     },
@@ -71,7 +71,6 @@ export default {
             selectedFile: null,
             imgUrl: null,
             canvasData: null,
-            imgLoading: false,
         }
     },
     methods: {
@@ -90,13 +89,17 @@ export default {
                 useWebWorker: true
             }
             try {
-                const compressedFile = await imageCompression(imageFile, options);
-                console.log('compressedFile instanceof Blob', compressedFile instanceof Blob); // true
-                console.log(`compressedFile size ${compressedFile.size / 1024 / 1024} MB`); // smaller than maxSizeMB
+                let compressedFile = await imageCompression(imageFile, options);
 
                 this.$emit('croppedImage', compressedFile)
+                this.selectedFile = null
+                this.imgUrl = null
+                this.canvasData = null
             } catch (error) {
                 console.log(error);
+                this.selectedFile = null
+                this.imgUrl = null
+                this.canvasData = null
             }
           });
         },

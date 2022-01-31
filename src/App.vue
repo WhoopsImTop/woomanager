@@ -19,7 +19,7 @@
           <v-btn text color="red" @click="error = false"
             >Trotzdem arbeiten</v-btn
           >
-          <v-btn color="success" @click="location.reload()"
+          <v-btn color="success" @click="window.location.reload()"
             >Nochmal versuchen</v-btn
           >
         </v-card-actions>
