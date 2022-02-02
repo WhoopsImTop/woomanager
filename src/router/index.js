@@ -9,6 +9,7 @@ import List from '../views/List.vue'
 import Orders from '../views/Orders.vue'
 import addProducts from '../views/addProducts.vue'
 import workTimeRecording from '../views/workTimeRecording.vue'
+import fastProductEditor from '../views/fastProductEditor.vue'
 
 Vue.use(VueRouter)
 
@@ -57,6 +58,11 @@ const routes = [
     path: '/workTime',
     name: 'workTimeRecording',
     component: workTimeRecording
+  },
+  {
+    path: '/fastEdit',
+    name: 'fastProductEditor',
+    component: fastProductEditor
   },
 ]
 

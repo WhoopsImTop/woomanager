@@ -384,6 +384,12 @@ export default {
           icon: "./static/clock.svg",
           active: false,
         },
+        {
+          name: "Produkte schnell bearbeiten",
+          to: "/fastEdit",
+          icon: "./static/inventory.svg",
+          active: true,
+        }
       ],
       workTimeRecording: false,
       settingDialog: false,
