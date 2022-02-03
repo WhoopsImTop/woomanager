@@ -387,7 +387,7 @@ export default {
         {
           name: "Produkte schnell bearbeiten",
           to: "/fastEdit",
-          icon: "./static/inventory.svg",
+          icon: "./static/edit.svg",
           active: true,
         }
       ],
