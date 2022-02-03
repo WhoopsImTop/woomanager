@@ -150,7 +150,12 @@ export default {
     saveItem(item, index) {
       this.indexClicked = index;
       this.loading = true;
-      console.log(item)
+      item.meta_data.forEach((meta) => {
+        if (meta.key == "_wpm_gtin_code") {
+          meta.value = item.ean_code;
+        }
+      });
+      item.regular_price = item.price;
       axios
       .patch(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/${item.id}/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`, {
         item
