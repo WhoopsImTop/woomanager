@@ -196,7 +196,12 @@ export default {
     deleteItemConfirm () {
         this.dialogLoading = true
         axios
-        .delete(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/tags/${this.editedItem.id}?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc&force=true`)
+        .delete(
+          `${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products/tags/${this.editedItem.id}?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}&force=true`)
         .then(() => {
           this.$store.state.tags.splice(this.editedIndex, 1)
           this.tags.splice(this.editedIndex, 1)
@@ -228,7 +233,11 @@ export default {
       save () {
         this.btnLoading = true
         if (this.editedIndex > -1) {
-          axios.patch(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/tags/${this.editedItem.id}?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`,
+          axios.patch(`${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products/tags/${this.editedItem.id}?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}`,
           this.editedItem)
           .then(res => {
             this.$store.state.tags[this.editedIndex] = res.data
@@ -246,7 +255,11 @@ export default {
             }, 2000)
           })
         } else {
-          axios.post(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/tags/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`,
+          axios.post(`${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products/tags/?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}`,
           this.editedItem)
           .then(res => {
             this.$store.state.tags.push(res.data)

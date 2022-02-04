@@ -70,8 +70,11 @@ import axios from "axios";
 export default {
   data: () => {
     return {
-      productsUrl:
-        "https://bindis-schaulaedle.de/wp-json/wc/v3/products?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc",
+      productsUrl: `${localStorage.getItem(
+        "shopURL"
+      )}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem(
+        "ck"
+      )}&consumer_secret=${localStorage.getItem("cs")}`,
       headers: [
         { text: "EAN", align: "start", sortable: false, value: "EAN" },
         { text: "Status", sortable: false, value: "Status" },

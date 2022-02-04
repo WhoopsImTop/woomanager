@@ -463,7 +463,11 @@ export default {
       this.dialogLoading = true;
       axios
         .post(
-          `https://bindis-schaulaedle.de/wp-json/wc/v3/products/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`,
+          `${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products/${this.editedItem.id}?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}`,
           {
             name: this.editedItem.name + " - Duplikat",
             manage_stock: true,
@@ -580,8 +584,11 @@ export default {
       }
       axios
         .delete(
-          `https://bindis-schaulaedle.de/wp-json/wc/v3/products/${this.editedItem.id}/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`
-        )
+          `${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products/${this.editedItem.id}?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}`)
         .then(() => {
           this.$store.state.products.splice(this.editedIndex, 1);
           this.dialogLoading = false;
@@ -641,7 +648,11 @@ export default {
         this.editedItem.manage_stock = true;
         axios
           .patch(
-            `https://bindis-schaulaedle.de/wp-json/wc/v3/products/${this.editedItem.id}/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`,
+            `${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products/${this.editedItem.id}?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}`,
             this.editedItem
           )
           .then((Response) => {
@@ -687,7 +698,11 @@ export default {
         this.editedItem.status = this.status.value;
         axios
           .post(
-            `https://bindis-schaulaedle.de/wp-json/wc/v3/products/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`,
+             `${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}`,
             this.editedItem
           )
           .then((Response) => {

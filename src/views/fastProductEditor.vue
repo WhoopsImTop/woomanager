@@ -159,7 +159,11 @@ export default {
       item.regular_price = item.price;
       await axios
         .patch(
-          `https://bindis-schaulaedle.de/wp-json/wc/v3/products/${item.id}/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`,
+          `${localStorage.getItem("shopURL")}/wp-json/wc/v3/products/${
+            item.id
+          }/?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}`,
           item
         )
         .then((response) => {

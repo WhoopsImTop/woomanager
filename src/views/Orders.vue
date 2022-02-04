@@ -313,7 +313,12 @@ export default {
 
       save () {
         this.btnLoading = true
-          axios.patch(`https://bindis-schaulaedle.de/wp-json/wc/v3/products/tags/${this.editedItem.id}?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc`,
+          axios.patch(
+            `${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products/tags/${this.editedItem.id}?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}`,
           this.editedItem)
           .then(res => {
             this.$store.state.orders[this.editedIndex] = res.data
