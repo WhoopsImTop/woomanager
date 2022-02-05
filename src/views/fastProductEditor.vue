@@ -6,7 +6,7 @@
       :items-per-page="15"
       :headers="headers"
       item-key="id"
-      class="glass2"
+      class="glass2 mt-3"
     >
       <template v-slot:top>
         <v-toolbar flat class="glass border-rounded my-3">
@@ -143,7 +143,7 @@ export default {
     //filter by name
     filteredName() {
       this.searchProducts = this.$store.state.products.filter((product) => {
-        return product.name.toLowerCase().includes(this.search.toLowerCase());
+        return product.name.toLowerCase().includes(this.search.toLowerCase()) || product.ean_code.toLowerCase().includes(this.search.toLowerCase());
       });
     },
     // save item

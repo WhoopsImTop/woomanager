@@ -1,5 +1,4 @@
 <template>
-  <v-container>
       <v-row cols=12>
           <v-col cols=8>
               <v-card class="glass pa-3 d-flex justify-space-between align-center mt-5">
@@ -106,7 +105,6 @@
               </v-card>
           </v-col>
       </v-row>
-  </v-container>
 </template>
 
 <script>

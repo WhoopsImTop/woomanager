@@ -65,11 +65,6 @@
               </div>
             </template>
           </v-checkbox>
-          <v-checkbox v-model="workTimeRecording">
-            <template v-slot:label>
-              <div>Zeiterfassung</div>
-            </template>
-          </v-checkbox>
         </v-container>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -79,7 +74,10 @@
       </v-card>
     </v-dialog>
 
-    <v-app-bar class="top-bar" app>
+    <v-app-bar 
+    class="top-bar" 
+    app
+      >
       <v-toolbar-title
         ><a
           style="color: #c3c3ce; text-decoration: none"
@@ -89,13 +87,70 @@
         ></v-toolbar-title
       >
       <v-spacer></v-spacer>
-      <v-chip v-show="workTimeRecording" dark class="glass2">
-        <v-icon small class="mr-4">mdi-clock-outline</v-icon>
-        <span>{{ workTimePassed }}</span>
-        <v-icon @click="startTimeRecording" small class="ml-4">{{
-          timeRecordingStatus
-        }}</v-icon>
-      </v-chip>
+      <v-menu      
+      v-show="workTimeActive == true"
+      v-model="menu"
+      :close-on-content-click="false"
+      :nudge-width="200"
+      offset-x
+      >
+      <template v-slot:activator="{ on, attrs }">
+        <v-btn
+          v-show="workTimeActive == true"
+          outlined
+          text
+          dark
+          v-bind="attrs"
+          v-on="on"
+        >
+        <v-icon
+          dark
+          small
+          class="mr-2"
+        >
+          mdi-clock-outline
+        </v-icon>
+          Arbeitszeit
+        </v-btn>
+      </template>
+
+      <v-card dark class="glass2">
+        <v-list style="background-color: unset !important">
+          <v-list-item>
+            <v-list-item-content>
+              <v-list-item-title> {{ UserName }} </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+        </v-list>
+
+        <v-divider></v-divider>
+
+        <v-list style="background-color: unset !important">
+          <v-list-item v-show="eingestempelt">
+            <v-list-item-title class="text-center"> {{ hours }} Stunde {{ minutes }} Minuten </v-list-item-title>
+          </v-list-item>
+
+          <v-list-item v-show="!eingestempelt">
+            <v-btn 
+            text
+            outlined
+            dark
+            block
+            @click="checkIn()"
+            >Einstempeln</v-btn>
+          </v-list-item>
+          <v-list-item v-show="eingestempelt">
+            <v-btn 
+            text
+            outlined
+            dark
+            block
+            @click="checkOut()"
+            >Ausstempeln</v-btn>
+          </v-list-item>
+        </v-list>
+      </v-card>
+      </v-menu>
 
       <div>
         <v-tooltip
@@ -323,6 +378,16 @@ import io from "socket.io-client";
 export default {
   data: () => {
     return {
+      fav: true,
+      menu: false,
+      message: false,
+      hints: true,
+      hours: 0,
+      minutes: 0,
+      eingestempelt: false,
+      startTime: null,
+      timeEntryID: null,
+      CheckIn: null,
       links: [
         {
           name: "Startseite",
@@ -391,17 +456,12 @@ export default {
           active: true,
         }
       ],
-      workTimeRecording: false,
       settingDialog: false,
-      timeRecording: false,
       customerKey: "",
       customerSecret: "",
       shopURL: "",
       btnLoading: false,
       btnText: "Onlineshop verbinden",
-      startTime: null,
-      endTime: null,
-      totalTime: 0.0,
       refreshing: false,
       registration: null,
       showUpdateUI: false,
@@ -412,9 +472,14 @@ export default {
       loadedProducts: 0,
       offline: false,
       error: false,
+      UserName: "",
     };
   },
   computed: {
+    workTimeActive() {
+      let index = this.links.findIndex((link) => link.name == "Arbeitszeit");
+      return this.links[index].active;
+    },
     getSiteName() {
       return localStorage.getItem("shopURL")
         ? localStorage.getItem("shopURL").split("https://").join("")
@@ -423,18 +488,39 @@ export default {
     secrets() {
       return localStorage.getItem("ck") ? false : true;
     },
-    timeRecordingStatus() {
-      if (this.timeRecording) {
-        return "mdi-pause";
-      } else {
-        return "mdi-play";
-      }
-    },
-    workTimePassed() {
-      return this.totalTime.toFixed(0);
-    },
   },
   methods: {
+    checkIn() {
+      this.eingestempelt = true;
+      this.$store.state.socket.emit("checkIn", {
+        user: this.UserName,
+        url: this.$store.state.shopURL,
+      });
+      this.$store.state.socket.on("checkIn", (data) => {
+        this.timeEntryID = data._id
+      });
+      this.$store.state.startTime = new Date();
+      this.startTimer();
+    },
+    checkOut() {
+      this.eingestempelt = false;
+      this.$store.state.socket.emit("checkOut", {
+        _id: this.CheckIn._id,
+      });
+      this.$store.state.endTime = new Date();
+    },
+    startTimer() {
+      //calculate time
+      let now = new Date();
+      let diff = now - this.$store.state.startTime;
+      this.hours = Math.floor(diff / 1000 / 60 / 60);
+      this.minutes = Math.floor(diff / 1000 / 60) % 60;
+      setTimeout(() => {
+        if(this.eingestempelt) {
+          this.startTimer();
+        }
+      }, 1000);
+    },
     RemoveLastEditedList() {
       try {
         localStorage.removeItem("latestEdited");
@@ -552,24 +638,6 @@ export default {
     async accept() {
       this.showUpdateUI = false;
       await this.$workbox.messageSW({ type: "SKIP_WAITING" });
-    },
-    startTimeRecording() {
-      this.timeRecording = !this.timeRecording;
-      if (this.timeRecording) {
-        this.startTime = new Date();
-        this.startTimer();
-      } else {
-        this.endTime = new Date();
-        this.totalTime = this.endTime - this.startTime;
-      }
-    },
-    startTimer() {
-      this.totalTime = (new Date() - this.startTime) / 1000;
-      if (this.timeRecording) {
-        setTimeout(() => {
-          this.startTimer();
-        }, 1000);
-      }
     },
     SaveDialogSettings() {
       localStorage.setItem("nav", JSON.stringify(this.links));
@@ -774,8 +842,8 @@ export default {
     },
   },
   created() {
+    this.UserName = localStorage.getItem("userName");
     this.$store.state.startTime = new Date().toTimeString().split(" ")[0];
-    console.log(new Date().toTimeString());
     this.$store.state.socket = io("https://bindis.rezept-zettel.de");
     this.$store.state.socket.on("connect", () =>
       this.$store.state.socket.emit("hello", {
@@ -783,6 +851,10 @@ export default {
         url: this.$route.path,
       })
     );
+
+    this.$store.state.socket.on("checkIn", (data) => {
+      this.CheckIn = data
+    });
 
     this.$store.state.socket.on("initialTodoLoad", (Todos) => {
       console.log(Todos);
