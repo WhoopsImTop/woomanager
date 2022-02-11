@@ -465,7 +465,7 @@ export default {
         .post(
           `${localStorage.getItem(
             "shopURL"
-          )}/wp-json/wc/v3/products/${this.editedItem.id}?consumer_key=${localStorage.getItem(
+          )}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem(
             "ck"
           )}&consumer_secret=${localStorage.getItem("cs")}`,
           {

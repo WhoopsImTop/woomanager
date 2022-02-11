@@ -96,7 +96,7 @@
                 >
                 <template v-slot:item.time="{ item }">
                     <v-chip label class="glass2">
-                        <span>{{ calculateWorkTime(item.startZeit, item.endZeit) }}</span>
+                        <span>{{ item.dauer }}</span>
                     </v-chip>
                 </template>
                 <template v-slot:item.date="{item}">
@@ -146,9 +146,9 @@
                         :size="150"
                         :width="20"
                         :value="calculatePercentageOfCircle"
-                        color="orange"
+                        color="accent"
                         >
-                        {{ value }}
+                        {{ (calculatePercentageOfCircle / 100 * 8).toFixed(1) + " Stunden"}}
                     </v-progress-circular>
                 </v-card-text>
                 <v-card-text>
@@ -282,10 +282,12 @@ export default {
         calculateWorkTime(start, end) {
             let startTime = new Date(start);
             let endTime = new Date(end);
-            let diff = endTime.getTime() - startTime.getTime();
-            let hours = Math.floor(diff / (1000 * 60 * 60));
-            let minutes = Math.floor(diff / (1000 * 480));
-            return Math.abs(hours) + ':' + Math.abs(minutes);
+            //calculate minutes and hours
+            let diff = Math.abs(endTime.getTime() - startTime.getTime()) / 1000;
+            let hours = Math.floor(diff / 3600) % 24;
+            let minutes = Math.floor(diff / 60) % 60;
+            return hours + ":" + minutes;
+            
         },
         registerUser() {
             axios
@@ -364,13 +366,12 @@ export default {
             })
         },
         saveWorkTime() {
-            let date = this.date.split('.')[1] + "." + this.date.split('.')[0] + "." + this.date.split('.')[2];
-            let startTime = date + " " + this.$store.state.startTime;
-            let endTime = date + " " + this.$store.state.endTime;
+            let startTime = this.date + ", " + this.$store.state.startTime;
+            let endTime = this.date + ", " + this.$store.state.endTime;
             axios
             .post('https://bindis.rezept-zettel.de/api/zeiten/', {
-                endZeit: startTime,
-                startZeit: endTime,
+                endZeit: endTime,
+                startZeit: startTime,
                 dauer: this.calculateWorkTime(startTime, endTime),
                 bearbeiter: localStorage.getItem('workTimeUser')
             })
