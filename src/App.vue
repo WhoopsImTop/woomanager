@@ -493,7 +493,7 @@ export default {
     checkIn() {
       this.eingestempelt = true;
       this.$store.state.socket.emit("checkIn", {
-        user: this.UserName,
+        user: localStorage.getItem("workTimeUser"),
         url: this.$store.state.shopURL,
       });
       this.$store.state.socket.on("checkIn", (data) => {

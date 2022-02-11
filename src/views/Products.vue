@@ -477,7 +477,7 @@ export default {
             status: "draft",
           }
         )
-        .then((res) => {
+        .then(res => {
           this.dialogLoading = false;
           this.$store.state.products.unshift(res.data);
           this.closeDuplication();

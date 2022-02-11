@@ -1,10 +1,89 @@
 <template>
-      <v-row cols=12>
-          <v-col cols=8>
+    <div>
+        <v-row v-if="!tokenChecker" cols=12>
+            <v-col class="mx-auto my-auto" cols=3>
+                <v-card dark class="glass">
+                    <v-card-title>
+                        Anmelden
+                    </v-card-title>
+                    <v-card-text>
+                        <v-col v-if="!register">
+                        <v-text-field
+                            v-model="email"
+                            label="Email"
+                            outlined
+                            required
+                        ></v-text-field>
+                        <v-text-field
+                            v-model="password"
+                            label="Passwort"
+                            outlined
+                            type="password"
+                            required
+                        ></v-text-field>
+                        </v-col>
+                        <v-col v-else>
+                            <v-text-field
+                                v-model="name"
+                                label="Name"
+                                outlined
+                                required
+                            ></v-text-field>
+                            <v-text-field
+                                v-model="email"
+                                label="Email"
+                                outlined
+                                required
+                            ></v-text-field>
+                            <v-text-field
+                                v-model="password"
+                                label="Passwort"
+                                outlined
+                                type="password"
+                                required
+                            ></v-text-field>
+                            <v-text-field
+                                v-model="hours"
+                                label="Stunden im Monat"
+                                outlined
+                                required
+                            ></v-text-field>
+                            <v-combobox
+                                v-model="selectedSubscription"
+                                :items="subscription"
+                                label="Abo-Model"
+                                outlined
+                                required
+                            ></v-combobox>
+                        </v-col>
+                        <v-col>
+                            <v-btn
+                                block
+                                color="primary"
+                                @click="register ? registerUser() : loginUser()"
+                                :disabled="!email || !password"
+                            >
+                                {{ register ? 'Registrieren' : 'Anmelden' }}
+                            </v-btn>
+                            <v-btn
+                                @click="register = !register"
+                                class="mt-3"
+                                block
+                                color="accent"
+                                >
+                                {{ register ? 'Anmelden' : 'Registrieren' }}
+                            </v-btn>
+                        </v-col>
+                    </v-card-text>
+                </v-card>
+            </v-col>
+        </v-row>
+      <v-row v-else cols=12>
+          <v-col cols=7>
               <v-card class="glass pa-3 d-flex justify-space-between align-center mt-5">
                 <h1>Zeiterfassung</h1>
                 <v-chip label class="glass2">
-                  <span>Überstunden 6H 20M</span>
+                  <span>Überstunden {{ overTime }}</span>
                 </v-chip>
                 <v-btn color="success">Arbeitszeit einreichen</v-btn>
               </v-card>
@@ -19,6 +98,9 @@
                     <v-chip label class="glass2">
                         <span>{{ calculateWorkTime(item.startZeit, item.endZeit) }}</span>
                     </v-chip>
+                </template>
+                <template v-slot:item.date="{item}">
+                    <span>{{ new Date(item.erstellt_am).toLocaleDateString('de-DE') }}</span>
                 </template>
                 <template v-slot:item.actions="{ item }">
                     <v-icon
@@ -37,8 +119,22 @@
                     </v-icon>
                 </template>
                 </v-data-table>
+                <div class="glass2 pa-4 mt-5" style="display: flex; justify-content: space-between; align-items: center">
+                    <span>Deine wöchentliche Arbeitszeit: {{ monthHours / 4 }} Stunden</span>
+                    <v-progress-linear
+                    dark
+                    color="accent"
+                    :value="calculatePercentageOfMonth()"
+                    style="width: 100px"
+                    height="25"
+                    ><template v-slot:default="{ value }">
+                        {{ value }}
+                    </template>
+                    </v-progress-linear>
+                    <span>Du hast {{ calculateAllItemsTogehter() }} | {{ monthHours }} Stunden gearbeitet</span>
+                </div>
           </v-col>
-          <v-col cols=4>
+          <v-col cols=5>
               <v-card dark class="glass mt-5">
                   <v-card-title>
                     <h3>Deine heutige Arbeitszeit</h3>
@@ -49,7 +145,7 @@
                         :rotate="270"
                         :size="150"
                         :width="20"
-                        :value="6"
+                        :value="calculatePercentageOfCircle"
                         color="orange"
                         >
                         {{ value }}
@@ -59,41 +155,46 @@
                     <h3>Arbeitszeit bearbeiten</h3>
                     <v-divider class="mt-3 mb-5"></v-divider>
                     <v-row cols=12>
-                        <v-col cols=6>
-                            <v-text-field
-                            label="Startzeit"
-                            v-model="$store.state.startTime"
-                            outlined
-                            >
-                            </v-text-field>
-                        </v-col>
-                        <v-col cols=6>
-                            <v-text-field
-                            label="Endzeit"
-                            v-model="$store.state.endTime"
-                            outlined
-                            >
-                            </v-text-field>
-                        </v-col>
-                        <v-col style="margin-top: -30px" cols=6>
-                            <div class="glass" style="display: flex; align-items: center; justify-content: center; height: 56px; border-radius:3px !important">
-                                <span>{{calculateHours($store.state.startTime, $store.state.endTime)}}</span>
-                            </div>
-                        </v-col>
-                        <v-col style="margin-top: -30px" cols=6>
-                            <div class="glass" style="display: flex; align-items: center; justify-content: center; height: 56px; border-radius:3px !important">
-                                <span>{{calculateMinutes($store.state.startTime, $store.state.endTime)}}</span>
-                            </div>
-                        </v-col>
                         <v-col cols=12>
                             <v-text-field
                             label="Datum"
                             v-model="date"
                             outlined
+                            :hint="errorHint"
+                            >
+                        </v-text-field>
+                        </v-col>
+                        <v-col cols=6>
+                            <v-text-field
+                            label="Startzeit"
+                            outlined
+                            v-model="$store.state.startTime"
+                            ></v-text-field>
+                        </v-col>
+                        <v-col cols=6>
+                            <v-text-field
+                            label="Endzeit"
+                            outlined
+                            v-model="$store.state.endTime"
+                            ></v-text-field>
+                        </v-col>
+                        <v-col cols=6>
+                            <v-text-field
+                            label="Stunden"
+                            v-model="calculateHours"
+                            outlined
                             >
                             </v-text-field>
                         </v-col>
-                        <v-col style="margin-top: -30px">
+                        <v-col cols=6>
+                            <v-text-field
+                            label="Minuten"
+                            v-model="calculateMinutes"
+                            outlined
+                            >
+                            </v-text-field>
+                        </v-col>
+                        <v-col>
                             <v-btn color="success" @click="saveWorkTime()" block>Arbeitszeit Speichern</v-btn>
                         </v-col>
                     </v-row>
@@ -105,6 +206,7 @@
               </v-card>
           </v-col>
       </v-row>
+    </div>
 </template>
 
 <script>
@@ -113,43 +215,140 @@ export default {
     data: () => {
         return {
             items: [],
+            register: false,
+            email: '',
+            password: '',
+            hours: '',
+            errorHint: '',
+            selectedSubscription: '',
+            overTime: 0,
+            monthHours: 0,
+            subscription: [
+                {
+                    text: "Standard 5€/Monat",
+                    value: "standard"
+                },
+                {
+                    text: "Premium 15€/Monat",
+                    value: "premium"
+                }
+            ],
             headers: [
-                { text: "Datum", align: "start", sortable: false, value: "Datum"},
-                { text: "Bearbeiter", align: "start", sortable: false, value: "Bearbeiter"},
+                { text: "Datum", align: "start", sortable: false, value: "date", width: "100" },
+                { text: "Start", align: "start", sortable: false, value: "startZeit", width: "150"},
+                { text: "Ende", align: "start", sortable: false, value: "endZeit", width: "150"},
                 { text: "Arbeitszeit", align: "end", sortable: false, value: 'time'},
                 { text: 'Funktionen', align: "end", value: 'actions', sortable: false },   
-            ]
+            ],
+            startTime: '',
         }
     },
+    computed: {
+        convertToTimeString(time) {
+            return new Date(time).toTimeString()
+        },
+        tokenChecker() {
+            return localStorage.getItem('workTimeToken') ? true : false;
+        },
+        startDate() {
+            let currentDate = new Date().getDate() + '.' + (new Date().getMonth() + 1) + '.' + new Date().getFullYear();
+            return new Date(currentDate + " " + this.$store.state.startTime).toLocaleString('de-DE');
+        },
+        calculateHours() {
+            let startTime = new Date(this.date + " " + this.$store.state.startTime);
+            let endTime = new Date(this.date + " " + this.$store.state.endTime);
+            let diff = endTime.getTime() - startTime.getTime();
+            let hours = Math.floor(diff / (1000 * 60 * 60)) ? Math.floor(diff / (1000 * 60 * 60)) : 0;
+            return hours;
+        },
+        calculateMinutes() {
+            let startTime = new Date(this.date + " " + this.$store.state.startTime);
+            let endTime = new Date(this.date + " " + this.$store.state.endTime);
+            let diff = endTime.getTime() - startTime.getTime() - (this.calculateHours * 60 * 60 * 1000);
+            let minutes = Math.floor(diff / (1000 * 60)) ? Math.floor(diff / (1000 * 60)) : 0;
+            return minutes;
+        },
+        calculatePercentageOfCircle() {
+            //calculate percentage of circle with max 8 hours with start and end time
+            let startTime = new Date(this.date + " " + this.$store.state.startTime);
+            let endTime = new Date(this.date + " " + this.$store.state.endTime);
+            let diff = endTime.getTime() - startTime.getTime() ? endTime.getTime() - startTime.getTime() : 0;
+            let minutes = Math.floor(diff / (1000 * 60));
+            let percentage = minutes / 480 * 100;
+            return percentage;           
+        },
+    },
     methods: {
-        calculateHours(start, end) {
-            start = new Date().getMonth() -1 + "." + new Date().getDate() + "." + new Date().getFullYear() + " " + start;
-            end = new Date().getMonth() -1 + "." + new Date().getDate() + "." + new Date().getFullYear() + " " + end;
-            let startTime = new Date(start);
-            let endTime = new Date(end);
-            let diff = endTime.getTime() - startTime.getTime();
-            let diffMinutes = Math.round(diff / 60000);
-            let hours = Math.floor(diffMinutes / 60);
-            return hours + " Stunden";
-        },
-        calculateMinutes(start, end) {
-            start = new Date().getMonth() -1 + "." + new Date().getDate() + "." + new Date().getFullYear() + " " + start;
-            end = new Date().getMonth() -1 + "." + new Date().getDate() + "." + new Date().getFullYear() + " " + end;
-            let startTime = new Date(start);
-            let endTime = new Date(end);
-            let diff = endTime.getTime() - startTime.getTime();
-            let diffMinutes = Math.round(diff / 60000);
-            let minutes = diffMinutes % 60;
-            return minutes + " Minuten";
-        },
         calculateWorkTime(start, end) {
             let startTime = new Date(start);
             let endTime = new Date(end);
             let diff = endTime.getTime() - startTime.getTime();
-            let diffMinutes = Math.round(diff / 60000);
-            let hours = Math.floor(diffMinutes / 60);
-            let minutes = diffMinutes % 60;
-            return hours + ":" + minutes;
+            let hours = Math.floor(diff / (1000 * 60 * 60));
+            let minutes = Math.floor(diff / (1000 * 480));
+            return Math.abs(hours) + ':' + Math.abs(minutes);
+        },
+        registerUser() {
+            axios
+            .post('https://bindis.rezept-zettel.de/api/users/create', {
+                name: this.name,
+                hours: this.hours,
+                email: this.email,
+                password: this.password,
+                url: window.location.href,
+                subscription: this.selectedSubscription.value
+            })
+            .then(() => {
+                this.register = false;
+                this.name = '';
+                this.email = '';
+                this.password = '';
+                this.hours = '';
+                this.selectedSubscription = '';
+            })
+            .catch(() => {
+                window.alert("Es gab einen fehler probiere es erneut")
+            });
+        },
+        loginUser() {
+            axios
+            .post('https://bindis.rezept-zettel.de/api/users/login', {
+                email: this.email,
+                password: this.password,
+            })
+            .then(response => {
+                this.register = false;
+                this.email = '';
+                this.password = '';
+                this.selectedSubscription = '';
+                localStorage.setItem("workTimeToken", response.data.accesstoken);
+                localStorage.setItem("workTimeUser", response.data.id);
+                localStorage.setItem("workTimeUserName", response.data.name);
+            })
+            .catch(() => {
+                window.alert("Es gab einen fehler probiere es erneut")
+            });
+        },
+        calculateAllItemsTogehter() {
+            // calculate minutes together with hours
+            let hours = 0;
+            let minutes = 0;
+            this.items.forEach(item => {
+                hours += parseInt(item.dauer.split(':')[0]);
+                minutes += parseInt(item.dauer.split(':')[1] % 60);
+            });
+            return hours + 'H' + ':' + minutes + 'M';
+        },
+        calculatePercentageOfMonth() {
+            let hours = 0;
+            let minutes = 0;
+            this.items.forEach(item => {
+                hours += parseInt(item.dauer.split(':')[0]);
+                minutes += parseInt(item.dauer.split(':')[1] % 60);
+            });
+            let totalMinutes = (hours * 60) + minutes;
+            let monthMinutes = (this.monthHours * 60);
+            let percentage = (totalMinutes / monthMinutes) * 100;
+            return percentage.toFixed(2) + '%';
         },
         getDate() {
             let day = new Date().getDate();
@@ -159,7 +358,7 @@ export default {
         },
         getWorkTime() {
             axios
-            .get('https://bindis.rezept-zettel.de/api/zeiten/' + localStorage.getItem('userName').split(' ')[0])
+            .get('https://bindis.rezept-zettel.de/api/zeiten/' + localStorage.getItem('workTimeUser'))
             .then(response => {
                 this.items = response.data;
             })
@@ -168,13 +367,12 @@ export default {
             let date = this.date.split('.')[1] + "." + this.date.split('.')[0] + "." + this.date.split('.')[2];
             let startTime = date + " " + this.$store.state.startTime;
             let endTime = date + " " + this.$store.state.endTime;
-            console.log(startTime);
             axios
             .post('https://bindis.rezept-zettel.de/api/zeiten/', {
                 endZeit: startTime,
                 startZeit: endTime,
-                Zeit: this.calculateWorkTime(startTime, endTime),
-                Bearbeiter: localStorage.getItem('userName').split(' ')[0]
+                dauer: this.calculateWorkTime(startTime, endTime),
+                bearbeiter: localStorage.getItem('workTimeUser')
             })
             .then(response => {
                 console.log(response)
@@ -183,9 +381,16 @@ export default {
         }
     },
     mounted() {
-        this.$store.state.endTime = new Date().toTimeString().split(' ')[0];
         this.date = this.getDate();
         this.getWorkTime();
+        if(localStorage.getItem('workTimeToken')) {
+            axios
+            .get('https://bindis.rezept-zettel.de/api/users/' + localStorage.getItem('workTimeUser'))
+            .then(response => {
+                this.overTime = response.data.overtime;
+                this.monthHours = response.data.hours;
+            })
+        }
     }
 }
 </script>
