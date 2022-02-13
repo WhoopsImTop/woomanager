@@ -495,6 +495,7 @@ export default {
       this.$store.state.socket.emit("checkIn", {
         user: localStorage.getItem("workTimeUser"),
         url: this.$store.state.shopURL,
+        workTimeId: localStorage.getItem("workTimeUser"),
       });
       this.$store.state.socket.on("checkIn", (data) => {
         this.timeEntryID = data._id
@@ -847,7 +848,8 @@ export default {
     this.$store.state.socket = io("https://bindis.rezept-zettel.de");
     this.$store.state.socket.on("connect", () =>
       this.$store.state.socket.emit("hello", {
-        name: localStorage.getItem("userName") || "Geschäft",
+        name: localStorage.getItem("userName") || "Geschäft",        
+        workTimeId: localStorage.getItem("workTimeUser"),
         url: this.$route.path,
       })
     );

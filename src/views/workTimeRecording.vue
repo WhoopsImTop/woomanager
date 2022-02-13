@@ -331,21 +331,27 @@ export default {
             });
         },
         calculateAllItemsTogehter() {
-            // calculate minutes together with hours
+            // calculate all items togehter and return minutes and hours
             let hours = 0;
-            let minutes = 0;
+            let min = 0;
             this.items.forEach(item => {
-                hours += parseInt(item.dauer.split(':')[0]);
-                minutes += parseInt(item.dauer.split(':')[1] % 60);
+                let startTime = new Date(item.startZeit);
+                let endTime = new Date(item.endZeit ? item.endZeit : item.startZeit);
+                let diff = Math.abs(endTime.getTime() - startTime.getTime()) / 1000;
+                hours += Math.floor(diff / 3600) % 24;
+                min += Math.floor(diff / 60) % 60;
             });
-            return hours + 'H' + ':' + minutes + 'M';
+            return hours + ":" + min;
         },
         calculatePercentageOfMonth() {
             let hours = 0;
             let minutes = 0;
             this.items.forEach(item => {
-                hours += parseInt(item.dauer.split(':')[0]);
-                minutes += parseInt(item.dauer.split(':')[1] % 60);
+                let startTime = new Date(item.startZeit);
+                let endTime = new Date(item.endZeit ? item.endZeit : item.startZeit);
+                let diff = Math.abs(endTime.getTime() - startTime.getTime()) / 1000;
+                hours += Math.floor(diff / 3600) % 24;
+                minutes += Math.floor(diff / 60) % 60;
             });
             let totalMinutes = (hours * 60) + minutes;
             let monthMinutes = (this.monthHours * 60);
