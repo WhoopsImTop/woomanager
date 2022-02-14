@@ -1,5 +1,11 @@
 <template>
   <div>
+    <imageEditorPopup
+                    @closeImagePopup="imgPopup = false"
+                    :imagePopup="imgPopup"
+                    :loading="imgLoading"
+                    @croppedImage="UploadImage($event)"
+                  />
     <v-dialog v-model="lastEditedPopup" max-width="500px">
       <v-card class="glass2" dark>
         <v-card-title>Zuletzt Bearbeitet</v-card-title>
@@ -139,15 +145,13 @@
               <v-col cols="12" sm="4" md="4"> </v-col>
               <v-row style="margin: 0px 20px" cols="12" sm="12" md="12">
                 <v-col cols="12" sm="4" md="4">
-                  <v-file-input
-                    id="image"
-                    @change="Compress"
-                    v-model="chosenFile"
-                    :loading="imgLoading"
-                    truncate-length="16"
-                    :hint="fileHint"
-                    label="Bild"
-                  ></v-file-input>
+                  
+                  <v-btn
+                    color="accent darken-1"
+                    class="mt-4"
+                    @click="imgPopup = true"
+                    ><v-icon>mdi-upload</v-icon> Bild auswählen
+                  </v-btn>
                 </v-col>
                 <div
                   v-for="image in editedItem.images"
@@ -372,10 +376,11 @@
 </template>
 <script>
 import axios from "axios";
-import imageCompression from "browser-image-compression";
+import imageEditorPopup from "../components/imageEditorPopup.vue";
 
 export default {
   data: () => ({
+    imgPopup: false,
     dialog: false,
     nameDialog: localStorage.getItem("userName") ? false : true,
     bearbeiterName: "",
@@ -464,6 +469,9 @@ export default {
       },
     ],
   }),
+  components: {
+    imageEditorPopup,
+  },
   methods: {
     getLastEdited() {
       this.lastEditedPopup = true;
@@ -544,39 +552,10 @@ export default {
       this.tags = this.$store.state.tags;
     },
 
-    Compress: async function () {
-      this.imgLoading = true;
-      const imageFile = document.getElementById("image").files[0];
-      try {
-        this.file = URL.createObjectURL(this.chosenFile);
-      } catch (e) {
-        console.warn(e);
-        this.imgLoading = false;
-        return;
-      }
-
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-        fileType: "png",
-      };
-      try {
-        const compressedFile = await imageCompression(imageFile, options);
-
-        await this.UploadImage(compressedFile);
-      } catch (error) {
-        console.log(error);
-        this.imgLoading = false;
-        this.fileHint = "Dieser Bildtyp wird nicht unterstützt.";
-        return;
-      }
-    },
-
     UploadImage(compressedFile) {
       let data = compressedFile;
       axios
-        .post(`${localStorage.getItem("shopUrl")}/wp-json/wp/v2/media`, data, {
+        .post("https://bindis-schaulaedle.de/wp-json/wp/v2/media", data, {
           headers: {
             Authorization: "Bearer " + this.$store.state.imageToken,
             "Content-Disposition": `attachment; filename=${compressedFile.name}`,
@@ -590,12 +569,14 @@ export default {
             src: res.data.source_url,
             name: res.data.slug,
           });
+          this.imgPopup = false;
           this.imgLoading = false;
+          data = null
         })
         .catch((err) => {
           console.log("AXIOS ERROR: ", err);
           this.imgLoading = false;
-          this.fileHint = "Bild konnten ich hochgeladen werden";
+          this.fileHint = "Bild konnte nicht hochgeladen werden";
         });
     },
 
