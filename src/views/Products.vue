@@ -290,7 +290,7 @@
         </v-chip>
       </template>
       <template v-slot:item.date="{ item }">
-        <span>{{ DateFormatter(item.date_created) }}</span>
+        <span>{{ DateFormatter(item.date_modified) }}</span>
       </template>
       <template v-slot:item.actions="{ item }">
         <v-icon small class="mr-2" @click="DuplicateItem(item)">
@@ -366,7 +366,7 @@ export default {
         sortable: true,
         value: "badge",
       },
-      { text: "Erstellt am", value: "date" },
+      { text: "Bearbeitet am", value: "date" },
       { text: "EAN", value: "ean_code" },
       { text: "Bestand", value: "stock_quantity" },
       { text: "Artikelnummer", value: "sku" },
@@ -443,7 +443,7 @@ export default {
       this.products = this.$store.state.products;
       //sort products by date
       this.products.sort((a, b) => {
-        return new Date(b.date_created) - new Date(a.date_created);
+        return new Date(b.date_modified) - new Date(a.date_modified);
       });
       this.category = this.$store.state.categories;
       this.tags = this.$store.state.tags;
