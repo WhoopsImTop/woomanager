@@ -48,7 +48,7 @@
       <template v-slot:item.priceTag="{ item }">
         <v-text-field
           style="margin: 0; height: 56px"
-          v-model="item.price"
+          v-model="item.regular_price"
           outlined
           label="Preis"
         ></v-text-field>

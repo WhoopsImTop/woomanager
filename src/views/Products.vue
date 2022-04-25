@@ -13,7 +13,6 @@
       :headers="headers"
       :items="searchProducts"
       item-key="id"
-      sort-by="calories"
       class="elevation-1 glass"
       :loading="dataLoading"
     >
@@ -30,12 +29,13 @@
             v-model="suche"
           >
           </v-text-field>
-          <v-combobox
+          <!-- <v-combobox
             dark
             label="Kategorie Suche"
             :items="category"
             v-model="searchCategoryItem"
-            @change="filterByCategoryName()"
+            @change="filteredCategories()"
+            clearable
             style="margin: 0 10px; height: 56px"
             outlined
             item-text="name"
@@ -45,9 +45,10 @@
           <v-checkbox
             dark
             label="Zeige Entwürfe"
+            @click="filterStatus()"
             v-model="showDraft"
             style="margin: 30px 10px 0; height: 56px"
-          ></v-checkbox>
+          ></v-checkbox> -->
           <v-spacer></v-spacer>
           <v-dialog v-model="dialog">
             <template v-slot:activator="{ on, attrs }">
@@ -413,7 +414,7 @@ export default {
     dataLoading: false,
     btnLoading: false,
     btnText: "Speichern",
-    searchCategoryItem: [],
+    searchCategoryItem: null,
     btnColor: "blue",
     chosenFile: null,
     category: null,
@@ -506,15 +507,12 @@ export default {
       return this.$store.state.products.filter((product) => {
         return (
           product.name.toLowerCase().includes(searchName) ||
-          product.sku
-            .toLowerCase()
-            .includes(this.suche.toLowerCase().replace(/ /g, "")) ||
+          product.sku.toLowerCase().includes(searchName.replace(/ /g, "")) ||
           product.ean_code
             .toLowerCase()
-            .includes(this.suche.toLowerCase().replace(/ /g, "")) ||
-          product.id
-            .toString()
-            .includes(this.suche.toLowerCase().replace(/ /g, ""))
+            .includes(searchName.replace(/ /g, "")) ||
+          (product.id.toString().includes(searchName.replace(/ /g, "")) &&
+            product.status == searchName)
         );
       });
     },
@@ -586,18 +584,6 @@ export default {
           window.alert("Produkt konnte nicht dupliziert werden", e);
           this.closeDuplication();
         });
-    },
-
-    filterByCategoryName() {
-      //filter this.$store.state.products by cateogory name
-      let categoryName = this.searchCategoryItem.name;
-      this.$store.state.products = this.$store.state.products.filter(
-        (product) => {
-          return product.categories.forEach((category) => {
-            return category.name == categoryName;
-          });
-        }
-      );
     },
 
     TranslateStatus(status) {
