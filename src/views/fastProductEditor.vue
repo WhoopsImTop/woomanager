@@ -48,7 +48,7 @@
       <template v-slot:item.priceTag="{ item }">
         <v-text-field
           style="margin: 0; height: 56px"
-          v-model="item.price"
+          v-model="item.regular_price"
           outlined
           label="Preis"
         ></v-text-field>
@@ -84,7 +84,6 @@
 </template>
 
 <script>
-import axios from "axios";
 export default {
   data: () => ({
     search: "",
@@ -149,35 +148,10 @@ export default {
     // save item
     async saveItem(item, index) {
       this.indexClicked = index;
+      console.log(item)
       this.loading = true;
-      for (let i = 0; i < item.meta_data.length; i++) {
-        if (item.meta_data[i].key == "_wpm_gtin_code") {
-          item.meta_data[i].value = item.ean_code;
-        }
-      }
-      console.log(item);
-      item.regular_price = item.price;
-      await axios
-        .patch(
-          `${localStorage.getItem("shopURL")}/wp-json/wc/v3/products/${
-            item.id
-          }/?consumer_key=${localStorage.getItem(
-            "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}`,
-          item
-        )
-        .then((response) => {
-          console.log(response);
-          this.loading = false;
-          this.indexClicked = null;
-          this.$store.state.products[this.$store.state.products.indexOf(item)] =
-            item;
-        })
-        .catch(() => {
-          window.alert("Es gabt einen Fehler, probiere es erneut");
-          this.loading = false;
-          this.indexClicked = null;
-        });
+      await item.updateProduct(item);
+      this.loading = false;
     },
   },
   created() {
