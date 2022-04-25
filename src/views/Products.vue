@@ -533,7 +533,7 @@ export default {
 
   methods: {
     init() {
-      this.$store.state.products.sort((a, b) => {
+      this.products.sort((a, b) => {
         return new Date(b.date_modified) - new Date(a.date_modified);
       });
       this.category = this.$store.state.categories;
