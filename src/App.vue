@@ -16,7 +16,7 @@
         </v-card-text>
         <v-divider v-show="error"></v-divider>
         <v-card-actions v-show="error">
-          <v-btn text color="red" @click="error = false"
+          <v-btn text color="red" @click="error = false, loading = false">
             >Trotzdem arbeiten</v-btn
           >
           <v-btn color="success" @click="window.location.reload()"
@@ -374,6 +374,7 @@
 <script>
 import axios from "axios";
 import io from "socket.io-client";
+import productClass from './classes/productClass.js';
 
 export default {
   data: () => {
@@ -672,7 +673,7 @@ export default {
                 for (let x = 0; x < res.data.length; x++) {
                   this.loadedProducts++;
                   if (res.data[x].name != "") {
-                    this.$store.state.products.push(res.data[x]);
+                    this.$store.state.products.push(new productClass(res.data[x]));
                   }
                   if (
                     res.data[x].stock_quantity <= 0 &&
@@ -824,6 +825,7 @@ export default {
             localStorage.setItem("shopURL", this.shopURL);
             this.btnLoading = false;
             this.btnText = "Erfolgreich verbunden";
+            window.loaction.reload();
             setTimeout(() => {
               this.btnText = "Onlineshop verbinden";
             }, 3000);

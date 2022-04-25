@@ -34,14 +34,20 @@
             dark
             label="Kategorie Suche"
             :items="category"
-            v-model="searchCategory"
+            v-model="searchCategoryItem"
+            @change="filterByCategoryName()"
             style="margin: 0 10px; height: 56px"
             outlined
             item-text="name"
-            @change="SearchCategory()"
             item-value="name"
           >
           </v-combobox>
+          <v-checkbox
+            dark
+            label="Zeige Entwürfe"
+            v-model="showDraft"
+            style="margin: 30px 10px 0; height: 56px"
+          ></v-checkbox>
           <v-spacer></v-spacer>
           <v-dialog v-model="dialog">
             <template v-slot:activator="{ on, attrs }">
@@ -57,7 +63,15 @@
             </template>
             <v-card class="glass2">
               <v-card-title>
-                <span class="text-h5">{{ formTitle }}</span>
+                <v-badge
+                  tile
+                  bottom
+                  inline
+                  color="success"
+                  :content="TranslateType(editedItem.type)"
+                >
+                  <span class="text-h5">{{ formTitle }}</span>
+                </v-badge>
               </v-card-title>
 
               <v-card-text>
@@ -199,6 +213,79 @@
                     </v-col>
                   </v-row>
                 </v-container>
+
+                <v-expansion-panels dark>
+                  <v-expansion-panel dark class="glass2">
+                    <v-expansion-panel-header>
+                      <span>
+                        <v-icon>mdi-sale</v-icon>
+                        Angebot erstellen
+                      </span>
+                    </v-expansion-panel-header>
+                    <v-expansion-panel-content>
+                      <v-row>
+                        <v-col cols="4">
+                          <v-text-field
+                            dark
+                            v-model="editedItem.sale_price"
+                            label="Preis (€)"
+                          ></v-text-field>
+                        </v-col>
+                        <v-col cols="4">
+                          <v-date-picker
+                            v-model="editedItem.date_on_sale_from"
+                            label="Startdatum"
+                            dark
+                          ></v-date-picker>
+                        </v-col>
+                        <v-col cols="4">
+                          <!-- sale start date -->
+                          <v-date-picker
+                            v-model="editedItem.date_on_sale_to"
+                            label="Startdatum"
+                            dark
+                          ></v-date-picker>
+                        </v-col>
+                      </v-row>
+                    </v-expansion-panel-content>
+                  </v-expansion-panel>
+
+                  <h2
+                    style="color: #fff; text-align: left"
+                    class="my-3"
+                    v-show="editedItem.type === 'variable'"
+                  >
+                    Variationen (In Arbeit)
+                  </h2>
+                  <!-- Variables Produkt -->
+                  <v-expansion-panel
+                    v-show="editedItem.type === 'variable'"
+                    v-for="variation in editedItem.variations"
+                    :key="variation.id"
+                    dark
+                    class="glass2"
+                  >
+                    <v-expansion-panel-header>
+                      <span>
+                        <v-icon>mdi-label</v-icon>
+                        {{ variation.attributes[0].name }}:
+                        {{ variation.attributes[0].option }}
+                      </span>
+                    </v-expansion-panel-header>
+                    <v-expansion-panel-content>
+                      <v-row>
+                        <v-col cols="4">
+                          <v-text-field
+                            dark
+                            v-model="variation.regular_price"
+                            disabled
+                            label="Preis (€)"
+                          ></v-text-field>
+                        </v-col>
+                      </v-row>
+                    </v-expansion-panel-content>
+                  </v-expansion-panel>
+                </v-expansion-panels>
               </v-card-text>
 
               <v-card-actions>
@@ -268,7 +355,7 @@
       <template v-slot:item.image="{ item }">
         <div class="p-2">
           <v-img
-            v-if="item.images.length != 0"
+            v-if="item.images.length > 0"
             :src="item.images[0].src"
             :alt="item.name"
             height="75px"
@@ -290,7 +377,7 @@
         </v-chip>
       </template>
       <template v-slot:item.date="{ item }">
-        <span>{{ DateFormatter(item.date_created) }}</span>
+        <span>{{ DateFormatter(item.date_modified) }}</span>
       </template>
       <template v-slot:item.actions="{ item }">
         <v-icon small class="mr-2" @click="DuplicateItem(item)">
@@ -314,9 +401,11 @@
 <script>
 import axios from "axios";
 import imageEditorPopup from "../components/imageEditorPopup.vue";
+import productClass from "../classes/productClass";
 
 export default {
   data: () => ({
+    showDraft: false,
     imgPopup: false,
     dialog: false,
     duplicationDialog: false,
@@ -324,7 +413,7 @@ export default {
     dataLoading: false,
     btnLoading: false,
     btnText: "Speichern",
-    searchCategory: [],
+    searchCategoryItem: [],
     btnColor: "blue",
     chosenFile: null,
     category: null,
@@ -343,7 +432,7 @@ export default {
         value: "draft",
       },
       {
-        name: "Veröffentlicht",
+        name: "Öffentlich",
         value: "publish",
       },
     ],
@@ -366,26 +455,29 @@ export default {
         sortable: true,
         value: "badge",
       },
-      { text: "Erstellt am", value: "date" },
+      { text: "Bearbeitet am", value: "date" },
       { text: "EAN", value: "ean_code" },
       { text: "Bestand", value: "stock_quantity" },
       { text: "Artikelnummer", value: "sku" },
+      { text: "Preis", value: "regular_price" },
       { text: "Actions", value: "actions", sortable: false },
     ],
     products: null,
     editedIndex: -1,
     editedItem: {
-      regular_price: "",
-      stock_quantity: 0,
-      manage_stock: true,
-      sku: "0",
-      ean_code: 0,
+      id: 0,
+      name: "",
       description: "",
-      categories: [],
-      tags: [],
+      price: 0,
+      stock_quantity: 0,
+      sku: "",
+      ean_code: "",
+      meta_data: [],
       images: [],
       status: "draft",
-      meta_data: [],
+      category: "",
+      tags: [],
+      type: "simple",
     },
     defaultItem: {
       regular_price: "",
@@ -411,7 +503,7 @@ export default {
     },
     searchProducts() {
       let searchName = this.suche.toLowerCase();
-      return this.products.filter((product) => {
+      return this.$store.state.products.filter((product) => {
         return (
           product.name.toLowerCase().includes(searchName) ||
           product.sku
@@ -419,6 +511,9 @@ export default {
             .includes(this.suche.toLowerCase().replace(/ /g, "")) ||
           product.ean_code
             .toLowerCase()
+            .includes(this.suche.toLowerCase().replace(/ /g, "")) ||
+          product.id
+            .toString()
             .includes(this.suche.toLowerCase().replace(/ /g, ""))
         );
       });
@@ -440,13 +535,18 @@ export default {
 
   methods: {
     init() {
-      this.products = this.$store.state.products;
-      //sort products by date
-      this.products.sort((a, b) => {
-        return new Date(b.date_created) - new Date(a.date_created);
+      this.$store.state.products.sort((a, b) => {
+        return new Date(b.date_modified) - new Date(a.date_modified);
       });
       this.category = this.$store.state.categories;
       this.tags = this.$store.state.tags;
+    },
+    TranslateType(type) {
+      if (type == "simple") {
+        return "Einfaches Produkt";
+      } else if (type == "variable") {
+        return "Variables Produkt";
+      }
     },
     DateFormatter(date) {
       let newDate = new Date(date);
@@ -477,7 +577,7 @@ export default {
             status: "draft",
           }
         )
-        .then(res => {
+        .then((res) => {
           this.dialogLoading = false;
           this.$store.state.products.unshift(res.data);
           this.closeDuplication();
@@ -488,37 +588,31 @@ export default {
         });
     },
 
+    filterByCategoryName() {
+      //filter this.$store.state.products by cateogory name
+      let categoryName = this.searchCategoryItem.name;
+      this.$store.state.products = this.$store.state.products.filter(
+        (product) => {
+          return product.categories.forEach((category) => {
+            return category.name == categoryName;
+          });
+        }
+      );
+    },
+
     TranslateStatus(status) {
       if (status === "draft") {
         return {
-          status: "Entwutf",
+          status: "Entwurf",
           color: "#CF4516FF",
           icon: "mdi-file-clock-outline",
         };
       } else if (status === "publish") {
         return {
-          status: "Veröffentlicht",
+          status: "Öffentlich",
           color: "#1674CFFF",
           icon: "mdi-earth",
         };
-      }
-    },
-
-    SearchCategory() {
-      if (!this.searchCategory == "") {
-        this.products = this.$store.state.products.filter((product) => {
-          return this.searchCategory.name
-            .toLowerCase()
-            .split(" ")
-            .every(
-              (v) =>
-                product.categories.filter((category) => {
-                  return category.name.toLowerCase().includes(v);
-                }).length > 0
-            );
-        });
-      } else if (this.searchCategory == "") {
-        this.products = this.$store.state.products;
       }
     },
 
@@ -545,7 +639,7 @@ export default {
           });
           this.imgPopup = false;
           this.imgLoading = false;
-          data = null
+          data = null;
         })
         .catch((err) => {
           console.log("AXIOS ERROR: ", err);
@@ -555,19 +649,30 @@ export default {
     },
 
     editItem(item) {
-      this.editedIndex = this.products.indexOf(item);
-      this.editedItem = Object.assign({}, item);
+      this.editedIndex = this.$store.state.products.indexOf(item);
+      console.log(item);
+      if (item.variations != []) {
+        // find products of variation array by id
+        this.$store.state.products.find((product) => {
+          item.variations.forEach((variation) => {
+            if (product.id == variation) {
+              console.log(product);
+            }
+          });
+        });
+      }
+      this.editedItem = item;
       this.dialog = true;
     },
 
     deleteItem(item) {
-      this.editedIndex = this.products.indexOf(item);
+      this.editedIndex = this.$store.state.products.indexOf(item);
       this.editedItem = Object.assign({}, item);
       this.dialogDelete = true;
     },
 
     DuplicateItem(item) {
-      this.editedIndex = this.products.indexOf(item);
+      this.editedIndex = this.$store.state.products.indexOf(item);
       this.editedItem = Object.assign({}, item);
       this.duplicationDialog = true;
     },
@@ -584,11 +689,12 @@ export default {
       }
       axios
         .delete(
-          `${localStorage.getItem(
-            "shopURL"
-          )}/wp-json/wc/v3/products/${this.editedItem.id}?consumer_key=${localStorage.getItem(
+          `${localStorage.getItem("shopURL")}/wp-json/wc/v3/products/${
+            this.editedItem.id
+          }?consumer_key=${localStorage.getItem(
             "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}`)
+          )}&consumer_secret=${localStorage.getItem("cs")}`
+        )
         .then(() => {
           this.$store.state.products.splice(this.editedIndex, 1);
           this.dialogLoading = false;
@@ -623,9 +729,9 @@ export default {
       });
     },
 
-    save() {
+    async save() {
       this.btnLoading = true;
-      if (this.editedIndex > -1) {
+      if (this.editedIndex != -1) {
         if (this.editedItem.meta_data[0].key === "_wpm_gtin_code") {
           this.editedItem.meta_data[0].value = this.editedItem.ean_code;
         } else {
@@ -635,53 +741,43 @@ export default {
           });
         }
         try {
-          this.products[this.editedIndex].method = "Patch";
-          this.products[this.editedIndex].edited_at = new Date();
-          this.products[this.editedIndex].loading = false;
+          this.$store.state.products[this.editedIndex].method = "Patch";
+          this.$store.state.products[this.editedIndex].edited_at = new Date();
+          this.$store.state.products[this.editedIndex].loading = false;
           this.editedItem.edited_at = new Date();
-          this.$store.commit("addToList", this.products[this.editedIndex]);
+          this.$store.commit(
+            "addToList",
+            this.$store.state.products[this.editedIndex]
+          );
         } catch (e) {
           console.log(e);
         }
-        Object.assign(this.products[this.editedIndex], this.editedItem);
+        Object.assign(
+          this.$store.state.products[this.editedIndex],
+          this.editedItem
+        );
         this.editedItem.status = this.status.value;
         this.editedItem.manage_stock = true;
-        axios
-          .patch(
-            `${localStorage.getItem(
-            "shopURL"
-          )}/wp-json/wc/v3/products/${this.editedItem.id}?consumer_key=${localStorage.getItem(
-            "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}`,
-            this.editedItem
-          )
-          .then((Response) => {
-            this.$store.state.products[this.editedIndex] = Response.data;
-            this.$store.state.products.splice(
-              1,
-              0,
-              this.$store.state.products.splice(this.editedIndex, 1)[0]
-            );
-            this.btnLoading = false;
-            this.btnText = "Produkt erfolgreich bearbeitet";
-            this.btnColor = "success";
-            setTimeout(() => {
-              this.btnText = "speichern";
-              this.btnColor = "blue";
-              this.close();
-            }, 2000);
-          })
-          .catch((e) => {
-            console.log(e);
-            this.btnLoading = false;
-            this.btnText = "Produkt konnte nicht bearbeitet werden";
-            this.btnColor = "danger";
-            setTimeout(() => {
-              this.btnText = "speichern";
-              this.btnColor = "blue";
-              this.close();
-            }, 2000);
-          });
+        const message = await this.editedItem.updateProduct(this.editedItem);
+        if (message === "success") {
+          this.btnLoading = false;
+          this.btnText = "Produkt erfolgreich bearbeitet";
+          this.btnColor = "success";
+          setTimeout(() => {
+            this.btnText = "speichern";
+            this.btnColor = "blue";
+            this.close();
+          }, 2000);
+        } else {
+          this.btnLoading = false;
+          this.btnText = "Produkt konnte nicht bearbeitet werden";
+          this.btnColor = "danger";
+          setTimeout(() => {
+            this.btnText = "speichern";
+            this.btnColor = "blue";
+            this.close();
+          }, 2000);
+        }
       } else {
         try {
           this.editedItem.method = "Post";
@@ -696,38 +792,27 @@ export default {
           value: this.editedItem.ean_code,
         });
         this.editedItem.status = this.status.value;
-        axios
-          .post(
-             `${localStorage.getItem(
-            "shopURL"
-          )}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem(
-            "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}`,
-            this.editedItem
-          )
-          .then((Response) => {
-            this.btnLoading = false;
-            this.btnText = "Produkt erfolgreich erstellt";
-            this.btnColor = "success";
-            this.$store.state.products.unshift(Response.data);
-            setTimeout(() => {
-              this.btnLoading = false;
-              this.btnText = "speichern";
-              this.btnColor = "blue";
-              this.close();
-            }, 2000);
-          })
-          .catch((e) => {
-            console.log(e);
-            this.btnLoading = false;
-            this.btnText = "Produkt konnte nicht erstellt werden";
-            this.btnColor = "danger";
-            setTimeout(() => {
-              this.btnText = "speichern";
-              this.btnColor = "blue";
-              this.close();
-            }, 2000);
-          });
+        let product = new productClass(this.editedItem);
+        const message = await product.createProduct();
+        if (message === "success") {
+          this.btnLoading = false;
+          this.btnText = "Produkt erfolgreich erstellt";
+          this.btnColor = "success";
+          setTimeout(() => {
+            this.btnText = "speichern";
+            this.btnColor = "blue";
+            this.close();
+          }, 2000);
+        } else {
+          this.btnLoading = false;
+          this.btnText = "Produkt konnte nicht erstellt werden";
+          this.btnColor = "danger";
+          setTimeout(() => {
+            this.btnText = "speichern";
+            this.btnColor = "blue";
+            this.close();
+          }, 2000);
+        }
       }
     },
   },
