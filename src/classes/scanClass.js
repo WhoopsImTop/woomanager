@@ -17,7 +17,7 @@ export default class ScanClass {
             );
             console.log(product);
             try {
-                if (product) {
+                if (product && product.ean_code.length > 2) {
                     product.stock_quantity = product.stock_quantity - 1;
                     product.updateProduct(product);
                     this.status = "gefunden";
