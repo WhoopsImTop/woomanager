@@ -13,11 +13,11 @@ export default class ScanClass {
     checkProductsforEan() {
         return new Promise((resolve, reject) => {
             const product = store.state.products.find(
-                (product) => product.ean_code === this.ean
+                (product) => product.ean_code == this.ean
             );
             console.log(product);
             try {
-                if (product) {
+                if (product && product.ean_code.length > 2) {
                     product.stock_quantity = product.stock_quantity - 1;
                     product.updateProduct(product);
                     this.status = "gefunden";
