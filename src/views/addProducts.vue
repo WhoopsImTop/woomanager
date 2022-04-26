@@ -1,5 +1,39 @@
 <template>
   <div>
+    <v-dialog dark v-model="addPopUp" max-width="500px">
+      <v-card class="glass">
+        <v-card-title>Produkt existiert</v-card-title>
+        <v-card-text>
+          <v-text-field
+            outlined
+            label="Name"
+            disabled
+            dark
+            v-model="currentProduct.name"
+          ></v-text-field>
+
+          <v-text-field
+            label="Wie viele Produkte sind gekommen?"
+            dark
+            v-model="newStock"
+          ></v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="gray darken-1" text @click="addPopUp = false">
+            Abbrechen
+          </v-btn>
+          <v-btn
+            color="blue darken-1"
+            text
+            :loading="btnLoading"
+            @click="updateStock"
+          >
+            Hinzufügen
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <h1 style="margin: 20px 0">Bitte Aufnehmen</h1>
     <v-sheet
       class="glass mb-3"
@@ -81,12 +115,16 @@ export default {
         { text: "Zeitstempel", sortable: true, value: "TimeStamp" },
         { text: "Funktionen", align: "end", sortable: false, value: "actions" },
       ],
+      addPopUp: false,
       loading: false,
       foundScans: [],
       searchEANText: "",
+      currentProduct: [],
+      newStock: 0,
       selectedItem: [],
       ScannedList: [],
       FailedScanList: [],
+      btnLoading: false,
       Search: "",
     };
   },
@@ -102,10 +140,20 @@ export default {
     handleScanSearch(EAN) {
       if (EAN != "") {
         try {
-          this.$store.state.socket.emit("addTodo", {
-            EAN: EAN,
-            Status: "Bitte Aufnehmen",
+          const Product = this.$store.state.products.find((item) => {
+            if (item.ean_code == EAN) {
+              return item;
+            }
           });
+          if (Product) {
+            this.currentProduct = Product;
+            this.addPopUp = true;
+          } else {
+            this.$store.state.socket.emit("addTodo", {
+              EAN: EAN,
+              Status: "Bitte Aufnehmen",
+            });
+          }
         } catch (error) {
           console.log(error);
           this.FailedScanList.push({
@@ -118,6 +166,15 @@ export default {
           );
         }
       }
+    },
+    async updateStock() {
+      console.log(this.currentProduct);
+      this.currentProduct.stock_quantity =
+        parseInt(this.currentProduct.stock_quantity) + parseInt(this.newStock);
+      this.btnLoading = true;
+      await this.currentProduct.updateProduct(this.currentProduct);
+      this.btnLoading = false;
+      this.addPopUp = false;
     },
     addToList(data) {
       //check if item is already in list

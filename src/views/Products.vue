@@ -533,7 +533,7 @@ export default {
 
   methods: {
     init() {
-      this.products.sort((a, b) => {
+      this.$store.state.products.sort((a, b) => {
         return new Date(b.date_modified) - new Date(a.date_modified);
       });
       this.category = this.$store.state.categories;
@@ -598,6 +598,12 @@ export default {
           status: "Öffentlich",
           color: "#1674CFFF",
           icon: "mdi-earth",
+        };
+      } else {
+        return {
+          status: "Bitte Nochmal Speichern",
+          color: "#666666",
+          icon: "mdi-file-clock-outline",
         };
       }
     },

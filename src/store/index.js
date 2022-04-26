@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import TimeRecording from '../classes/timeClass'
 
 Vue.use(Vuex)
 
@@ -20,9 +21,7 @@ export default new Vuex.Store({
         latestEdited: [],
         socket: null,
         users: [],
-        workTime: 0,
-        startTime: null,
-        endTime: null,
+        timeTracking: new TimeRecording(),
     },
     mutations: {
         addToList(state, payload) {

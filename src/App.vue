@@ -127,7 +127,7 @@
 
         <v-list style="background-color: unset !important">
           <v-list-item v-show="eingestempelt">
-            <v-list-item-title class="text-center"> {{ hours }} Stunde {{ minutes }} Minuten </v-list-item-title>
+            <v-list-item-title class="text-center"> </v-list-item-title>
           </v-list-item>
 
           <v-list-item v-show="!eingestempelt">
@@ -492,36 +492,13 @@ export default {
   },
   methods: {
     checkIn() {
+      console.log(this.$store.state.timeTracking);
       this.eingestempelt = true;
-      this.$store.state.socket.emit("checkIn", {
-        user: localStorage.getItem("workTimeUser"),
-        url: this.$store.state.shopURL,
-        workTimeId: localStorage.getItem("workTimeUser"),
-      });
-      this.$store.state.socket.on("checkIn", (data) => {
-        this.timeEntryID = data._id
-      });
-      this.$store.state.startTime = new Date();
-      this.startTimer();
+      this.$store.state.timeTracking.startTimer();
     },
     checkOut() {
       this.eingestempelt = false;
-      this.$store.state.socket.emit("checkOut", {
-        _id: this.CheckIn._id,
-      });
-      this.$store.state.endTime = new Date();
-    },
-    startTimer() {
-      //calculate time
-      let now = new Date();
-      let diff = now - this.$store.state.startTime;
-      this.hours = Math.floor(diff / 1000 / 60 / 60);
-      this.minutes = Math.floor(diff / 1000 / 60) % 60;
-      setTimeout(() => {
-        if(this.eingestempelt) {
-          this.startTimer();
-        }
-      }, 1000);
+      this.$store.state.timeTracking.stopTimer();
     },
     RemoveLastEditedList() {
       try {
@@ -858,10 +835,6 @@ export default {
 
     this.$store.state.socket.on("checkIn", (data) => {
       this.CheckIn = data
-    });
-
-    this.$store.state.socket.on("initialTodoLoad", (Todos) => {
-      console.log(Todos);
     });
 
     this.$store.state.socket.on("currentUsers", (data) => {
