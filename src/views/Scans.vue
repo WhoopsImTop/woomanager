@@ -1,14 +1,14 @@
 <template>
   <div>
-    <v-dialog v-model="dialog" width="500" persistent>
+    <v-dialog v-model="dialog" persistent>
       <v-card class="glass" dark>
         <v-card-title class="text-h5">
           Wollen Sie den Scan wirklich löschen?
         </v-card-title>
-        <v-card-text>EAN: {{ currentItem.ean }}</v-card-text>
+        <v-card-text>EAN: {{ selectedItem.EAN }}</v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn dark text @click="dialog = false">
+          <v-btn color="secondary" text @click="dialog = false">
             Abbrechen
           </v-btn>
           <v-btn color="red" text @click="removeItem()"> löschen </v-btn>
@@ -17,40 +17,54 @@
     </v-dialog>
 
     <h1 style="margin: 20px 0">Barcodescanner</h1>
-    <div class="col" style="position: relative">
-      <v-text-field
-        dark
-        id="EANScanner"
-        v-model="searchParam"
-        label="Suche"
-        color="success"
-        class="mt-2"
-        @input="onScan"
-        :error="fieldSelected"
-        outlined
-      ></v-text-field>
-      <span style="position: absolute; top: 80px; color: #ff5252">{{
-        fieldhint
-      }}</span>
-    </div>
     <v-row class="h-full">
       <v-col cols="10">
-        <div class="container">
-          <div
-            class="glass scan-item my-3"
-            v-for="(item, i) in $store.state.scans"
-            :key="i"
-          >
-            <span style="color: #fff">{{ item.ean }}</span>
-            <span style="color: #fff">{{ item.status }}</span>
-            <span style="color: #fff">{{ item.timestamp }}</span>
-            <v-btn icon>
-              <v-icon @click="removeProduct(item)" class="red--text">
-                mdi-delete
-              </v-icon>
-            </v-btn>
-          </div>
-        </div>
+        <v-data-table
+          dark
+          :headers="headers"
+          :items="scans"
+          :items-per-page="itemsPerPage"
+          :loading="loading"
+          loading-text="Daten werden geaden"
+          class="elevation-1 glass"
+        >
+          <template v-slot:top>
+            <div class="col" style="position: relative">
+              <v-text-field
+                id="EANScanner"
+                v-model="searchParam"
+                label="Suche"
+                color="success"
+                class="mt-2"
+                @input="onScan"
+                :error="fieldSelected"
+                outlined
+              ></v-text-field>
+              <span style="position: absolute; top: 80px; color: #ff5252">{{
+                fieldhint
+              }}</span>
+            </div>
+            <div
+              style="
+                position: relative;
+                display: flex;
+                height: 50px;
+                align-items: center;
+              "
+            >
+              <v-chip
+                v-show="searchEANText != ''"
+                class="glass"
+                color="green"
+                >{{ searchEANText }}</v-chip
+              >
+            </div>
+          </template>
+
+          <template v-slot:item.actions="{ item }">
+            <v-icon small @click="removeProduct(item)"> mdi-delete </v-icon>
+          </template>
+        </v-data-table>
       </v-col>
       <v-col
         cols="2"
@@ -71,9 +85,8 @@
               display: flex;
               justify-content: space-between;
               font-family: monospace;
-              min-height: 100%;
             "
-            v-for="(item, i) in $store.state.foundScans"
+            v-for="(item, i) in foundScans"
             :key="i"
           >
             <span
@@ -85,7 +98,7 @@
               "
               >{{ item.name }}</span
             >
-            <span>{{ item.regular_price }}</span>
+            <span>{{ item.price }}</span>
           </div>
         </div>
         <div
@@ -98,9 +111,7 @@
           "
         >
           <hr />
-          <span style="font-family: monospace"
-            >Gesamt: {{ countPrices.toFixed(2) }}€</span
-          >
+          <span style="font-family: monospace">Gesamt: {{ countPrices }}€</span>
         </div>
       </v-col>
     </v-row>
@@ -109,20 +120,29 @@
 
 <script>
 import axios from "axios";
-import Scan from "../classes/scanClass";
 
 export default {
   data: () => {
     return {
+      productsUrl:
+        "https://bindis-schaulaedle.de/wp-json/wc/v3/products?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc",
+      headers: [
+        { text: "EAN", align: "start", sortable: false, value: "EAN" },
+        { text: "Status", sortable: false, value: "Status" },
+        { text: "Zeitstempel", sortable: true, value: "TimeStamp" },
+        { text: "Funktionen", align: "end", sortable: false, value: "actions" },
+      ],
+      scans: [],
+      itemsPerPage: 10,
       loading: false,
       suche: "",
       searchParam: "",
+      foundScans: [],
       searchEANText: "",
       dialog: false,
       selectedItem: [],
       ScannedList: [],
       failedUploadScans: [],
-      currentItem: [],
       eanCode: "",
       statusCode: "",
       fieldSelected: true,
@@ -132,13 +152,13 @@ export default {
   computed: {
     countPrices() {
       let price = 0;
-      for (let i = 0; i < this.$store.state.foundScans.length; i++) {
+      for (let i = 0; i < this.foundScans.length; i++) {
         if (
-          this.$store.state.foundScans[i].regular_price != "" &&
-          this.$store.state.foundScans[i].regular_price != null &&
-          this.$store.state.foundScans[i].regular_price != undefined
+          this.foundScans[i].price != "" &&
+          this.foundScans[i].price != null &&
+          this.foundScans[i].price != undefined
         ) {
-          price += JSON.parse(this.$store.state.foundScans[i].regular_price);
+          price += JSON.parse(this.foundScans[i].price);
         }
       }
       return price;
@@ -163,13 +183,50 @@ export default {
       }
     },
     async Scan(Search) {
-      let scan = new Scan(Search);
-      this.loading = true;
-      await scan.checkProductsforEan();
-      this.loading = false;
+      let index = await this.$store.state.products.findIndex(
+        (x) => x.ean_code === Search
+      );
+      if (Search != "") {
+        if (index != -1) {
+          this.searchEANText = "Produkt gefunden";
+          this.foundScans.push(this.$store.state.products[index]);
+          this.ReduceProduct(
+            this.$store.state.products[index].id,
+            this.$store.state.products[index].stock_quantity
+          );
+        } else {
+          this.searchEANText = "Produkt nicht gefunden";
+          let check = await this.serverProductChecker(Search);
+          if (!check) {
+            this.SaveItem(Search, "nicht gefunden");
+          }
+        }
+      }
       setTimeout(() => {
         this.searchEANText = "";
       }, 1000);
+    },
+    async serverProductChecker(id) {
+      let data = await axios
+        .get(
+          `https://bindis-schaulaedle.de/wp-json/wc/v3/products/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc&search=${id}`
+        )
+        .then((response) => {
+          return response.data;
+        });
+      if (data.length === 1) {
+        this.foundScans.push(data[0]);
+        this.scans.push({
+          Id: data[0].id,
+          EAN: data[0].ean_code,
+          Status: "gefunden",
+        });
+        this.$store.state.products.push(data[0]);
+        this.ReduceProduct(data[0].id, data[0].stock_quantity);
+        return true;
+      } else {
+        return false;
+      }
     },
     async SaveItem(ean, status) {
       this.eanCode = ean;
@@ -179,15 +236,66 @@ export default {
         Status: this.statusCode,
       });
     },
-    async removeItem() {
-      this.loading = true;
-      await this.currentItem.deleteScan();
+    removeItem() {
+      if (this.selectedItem.Status === "gefunden") {
+        this.CountUpProduct(this.selectedItem.Id);
+      }
+      this.scannedArticles--;
+      this.$store.state.socket.emit("updateTodo", this.selectedItem);
+      //remove selected from table
+      for (let i = 0; i < this.scans.length; i++) {
+        if (this.scans[i].TimeStamp === this.selectedItem.TimeStamp) {
+          this.scans.splice(i, 1);
+          break;
+        }
+      }
       this.dialog = false;
-      this.loading = false;
     },
     removeProduct(item) {
-      this.currentItem = item;
+      this.selectedItem = item;
       this.dialog = true;
+    },
+    async ReduceProduct (id, stock_quantity) {
+      let newStock = stock_quantity - 1;
+      axios.post(
+        "https://bindis-schaulaedle.de/wp-json/wc/v3/products/" +
+          id +
+          "?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc",
+        {
+          stock_quantity: newStock,
+        }
+      );
+      let index = await this.$store.state.products.findIndex(
+        (x) => x.id === id
+      );
+      this.$store.state.products[index].stock_quantity = newStock;
+    },
+    CountUpProduct: function (ID) {
+      axios
+        .get(
+          "https://bindis-schaulaedle.de/wp-json/wc/v3/products/" +
+            ID +
+            "?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc"
+        )
+        .then((response) => {
+          let res = response.data.stock_quantity;
+          let NewStock = res + 1;
+          axios
+            .post(
+              "https://bindis-schaulaedle.de/wp-json/wc/v3/products/" +
+                ID +
+                "?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc",
+              {
+                stock_quantity: NewStock,
+              }
+            )
+            .then((response) => {
+              console.log(response);
+            })
+            .catch((e) => {
+              console.log(e);
+            });
+        });
     },
   },
   mounted() {
@@ -212,7 +320,7 @@ export default {
 
     setTimeout(() => {
       EANScanner.focus();
-    }, 5000);
+    }, 1000);
 
     this.$store.state.socket.on("updateTodo", (data) => {
       this.scans.splice(this.scans.indexOf(data), 1);
@@ -261,16 +369,5 @@ export default {
 };
 </script>
 
-<style scoped>
-.scan-item {
-  display: flex;
-  flex-basis: 150px;
-  flex-grow: 2;
-  height: 50px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.scan-container {
-}
+<style>
 </style>
