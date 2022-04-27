@@ -17,6 +17,12 @@
             dark
             v-model="newStock"
           ></v-text-field>
+          
+          <v-text-field
+            label="Preis"
+            dark
+            v-model="currentProduct.regular_price"
+          ></v-text-field>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>

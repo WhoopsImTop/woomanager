@@ -8,36 +8,22 @@ export default class ScanClass {
     this.status = ''
     this.todoID = null
     this.Anzahl = 1
+    this.product =
+      ean != ''
+        ? store.state.products.find((product) => product.ean_code === this.ean)
+        : null
   }
 
   checkProductsforEan() {
-    store.state.scans.unshift(this)
-    return new Promise((resolve, reject) => {
-      const product = store.state.products.find((product, i) => {
-        if (product.ean_code == this.ean) {
-            console.log(i)
-          return product
-        }
-      })
-      console.log(product)
-
-      try {
-        if (product && product.ean_code.length > 5) {
-          product.stock_quantity = product.stock_quantity - 1
-          product.updateProduct(product)
-          this.status = 'gefunden'
-          store.state.foundScans.unshift(product)
-          
-          return resolve()
-        } else if(product === undefined) {
-          this.status = 'nicht gefunden'
-          this.uploadFailedEAN()
-          return resolve()
-        }
-      } catch (error) {
-        return reject(error)
-      }
-    })
+    if (this.product == null || this.product == undefined) {
+      this.status = 'EAN nicht gefunden'
+      store.state.scans.unshift(this)
+    } else {
+      this.product.stock_quantity = this.product.stock_quantity - 1
+      this.product.updateProduct(this.product)
+      this.status = 'gefunden'
+      store.state.foundScans.unshift(this.product)
+    }
   }
 
   updateProduct(product) {

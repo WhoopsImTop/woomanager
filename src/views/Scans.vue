@@ -120,6 +120,7 @@
 
 <script>
 import axios from "axios";
+import Scan from "../classes/scanClass";
 
 export default {
   data: () => {
@@ -183,7 +184,16 @@ export default {
       }
     },
     async Scan(Search) {
-      let index = await this.$store.state.products.findIndex(
+      if(Search == "" || Search.length < 6){
+        return;
+      }
+      this.loading = true;
+      let scan = new Scan(Search);
+      scan.checkProductsforEan();
+      console.log(scan.ean, scan.product)
+      this.loading = false;
+
+      /* let index = await this.$store.state.products.findIndex(
         (x) => x.ean_code === Search
       );
       if (Search != "") {
@@ -204,7 +214,7 @@ export default {
       }
       setTimeout(() => {
         this.searchEANText = "";
-      }, 1000);
+      }, 1000); */
     },
     async serverProductChecker(id) {
       let data = await axios

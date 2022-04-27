@@ -95,7 +95,6 @@
                     <v-col cols="12" sm="6" md="4">
                       <v-text-field
                         dark
-                        type="number"
                         v-model="editedItem.stock_quantity"
                         label="Bestand"
                       ></v-text-field>
