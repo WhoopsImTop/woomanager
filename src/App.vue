@@ -857,13 +857,12 @@ export default {
         this.links[i].active = savedNav[i].active;
       }
     }
-    setInterval(() => {
-      if (navigator.onLine) {
-        this.offline = false;
-      } else {
-        this.offline = true;
-      }
-    }, 200);
+    window.addEventListener('offline', () => {
+      this.offline = true;
+    });
+    window.addEventListener('online', () => {
+      this.offline = false;
+    });
     if (this.$workbox) {
       this.$workbox.addEventListener("waiting", () => {
         this.showUpdateUI = true;

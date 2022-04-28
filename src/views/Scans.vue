@@ -22,7 +22,7 @@
         <v-data-table
           dark
           :headers="headers"
-          :items="scans"
+          :items="$store.state.scans"
           :items-per-page="itemsPerPage"
           :loading="loading"
           loading-text="Daten werden geaden"
@@ -86,7 +86,7 @@
               justify-content: space-between;
               font-family: monospace;
             "
-            v-for="(item, i) in foundScans"
+            v-for="(item, i) in $store.state.foundScans"
             :key="i"
           >
             <span
@@ -128,9 +128,9 @@ export default {
       productsUrl:
         "https://bindis-schaulaedle.de/wp-json/wc/v3/products?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc",
       headers: [
-        { text: "EAN", align: "start", sortable: false, value: "EAN" },
-        { text: "Status", sortable: false, value: "Status" },
-        { text: "Zeitstempel", sortable: true, value: "TimeStamp" },
+        { text: "EAN", align: "start", sortable: false, value: "ean" },
+        { text: "Status", sortable: false, value: "status" },
+        { text: "Zeitstempel", sortable: true, value: "timestamp" },
         { text: "Funktionen", align: "end", sortable: false, value: "actions" },
       ],
       scans: [],
@@ -247,18 +247,7 @@ export default {
       });
     },
     removeItem() {
-      if (this.selectedItem.Status === "gefunden") {
-        this.CountUpProduct(this.selectedItem.Id);
-      }
-      this.scannedArticles--;
-      this.$store.state.socket.emit("updateTodo", this.selectedItem);
-      //remove selected from table
-      for (let i = 0; i < this.scans.length; i++) {
-        if (this.scans[i].TimeStamp === this.selectedItem.TimeStamp) {
-          this.scans.splice(i, 1);
-          break;
-        }
-      }
+      this.selectedItem.deleteScan();
       this.dialog = false;
     },
     removeProduct(item) {

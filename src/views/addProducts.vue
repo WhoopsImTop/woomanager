@@ -17,7 +17,7 @@
             dark
             v-model="newStock"
           ></v-text-field>
-          
+
           <v-text-field
             label="Preis"
             dark
@@ -60,12 +60,12 @@
         @input="onScan"
       ></v-text-field>
     </v-sheet>
-    <v-list v-if="ScannedList.length > 0" class="glass" nav dense>
+    <v-list v-if="$store.state.addList.length > 0" class="glass" nav dense>
       <v-list-item-group class="my-5" v-model="selectedItem" color="primary">
         <v-list-item
           dark
           class="glass2"
-          v-for="item in ScannedList"
+          v-for="item in $store.state.addList"
           :key="item._id"
         >
           <v-list-item-content>
@@ -144,33 +144,48 @@ export default {
       }
     },
     handleScanSearch(EAN) {
-      if (EAN != "") {
-        try {
-          const Product = this.$store.state.products.find((item) => {
-            if (item.ean_code == EAN) {
-              return item;
-            }
-          });
-          if (Product) {
-            this.currentProduct = Product;
-            this.addPopUp = true;
-          } else {
-            this.$store.state.socket.emit("addTodo", {
-              EAN: EAN,
-              Status: "Bitte Aufnehmen",
-            });
+      if (EAN == "" || EAN.length < 6) {
+        return;
+      }
+      try {
+        let Product = this.$store.state.products.find((item) => {
+          if (item.ean_code == EAN) {
+            return item;
           }
-        } catch (error) {
-          console.log(error);
-          this.FailedScanList.push({
+        });
+        if (Product) {
+          this.currentProduct = Product;
+          this.addPopUp = true;
+        } else {
+          this.$store.state.socket.emit("addTodo", {
             EAN: EAN,
             Status: "Bitte Aufnehmen",
           });
-          localStorage.setItem(
-            "FailedScanList",
-            JSON.stringify(this.FailedScanList)
-          );
+          let found = this.$store.state.addList.find((item) => {
+            if (item.EAN == EAN) {
+              return item;
+            }
+          });
+          if (found) {
+            found.Anzahl++;
+          } else {
+            this.$store.state.addList.unshift({
+              EAN: EAN,
+              Status: "Bitte Aufnehmen",
+              Anzahl: 1,
+            });
+          }
         }
+      } catch (error) {
+        console.log(error);
+        this.FailedScanList.push({
+          EAN: EAN,
+          Status: "Bitte Aufnehmen",
+        });
+        localStorage.setItem(
+          "FailedScanList",
+          JSON.stringify(this.FailedScanList)
+        );
       }
     },
     async updateStock() {
@@ -181,45 +196,6 @@ export default {
       await this.currentProduct.updateProduct(this.currentProduct);
       this.btnLoading = false;
       this.addPopUp = false;
-    },
-    addToList(data) {
-      //check if item is already in list
-      let found = this.ScannedList.find((item) => item.EAN == data.EAN);
-      if (found == undefined) {
-        this.ScannedList.push(data);
-      } else {
-        found.Anzahl += 1;
-      }
-    },
-    reUploadItem() {
-      //upload failed scans
-      let FailedScanList = JSON.parse(localStorage.getItem("FailedScanList"));
-      if (FailedScanList) {
-        FailedScanList.forEach((item) => {
-          axios
-            .post("https://bindis.rezept-zettel.de/api/scans", {
-              EAN: item.EAN,
-              Status: "Bitte Aufnehmen",
-            })
-            .then((response) => {
-              if (response.data.includes(item.EAN)) {
-                this.addToList(response.data);
-                this.FailedScanList.splice(FailedScanList.indexOf(item), 1);
-              } else {
-                axios
-                  .get("https://bindis.rezept-zettel.de/api/scans/" + item.EAN)
-                  .then((response) => {
-                    this.addToList(response.data);
-                    this.FailedScanList.splice(FailedScanList.indexOf(item), 1);
-                  });
-              }
-            });
-        });
-      }
-      localStorage.setItem(
-        "FailedScanList",
-        JSON.stringify(this.FailedScanList)
-      );
     },
     async removeItem(id) {
       axios
@@ -232,14 +208,6 @@ export default {
   mounted() {
     document.getElementById("search").focus();
     this.FailedScanList = JSON.parse(localStorage.getItem("FailedScanList"));
-
-    this.$store.state.socket.on("addTodo", (data) => {
-      console.log(data);
-      this.addToList(data);
-      if (localStorage.getItem("FailedScanList")) {
-        this.reUploadItem();
-      }
-    });
   },
 };
 </script>

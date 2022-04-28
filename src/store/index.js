@@ -10,6 +10,8 @@ export default new Vuex.Store({
         outOfStock: [],
         categories: [],
         foundScans: [],
+        sellingReport: [],
+        addList: [],
         scans: [],
         tags: [],
         loading: true,

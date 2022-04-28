@@ -145,7 +145,7 @@
                       <v-combobox
                         dark
                         class="my-5"
-                        v-model="status"
+                        v-model="editedItem.status"
                         :items="statusItems"
                         item-text="name"
                         item-value="value"
@@ -589,18 +589,21 @@ export default {
       if (status === "draft") {
         return {
           status: "Entwurf",
+          default: "draft",
           color: "#CF4516FF",
           icon: "mdi-file-clock-outline",
         };
       } else if (status === "publish") {
         return {
           status: "Öffentlich",
+          default: "publish",
           color: "#1674CFFF",
           icon: "mdi-earth",
         };
       } else {
         return {
           status: "Bitte Nochmal Speichern",
+          default: "draft",
           color: "#666666",
           icon: "mdi-file-clock-outline",
         };

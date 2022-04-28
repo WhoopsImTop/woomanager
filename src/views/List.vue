@@ -722,6 +722,15 @@ export default {
                   .catch((e) => {
                     console.log(e);
                   });
+                  if(current.Status == "nicht gefunden") {
+                    const product = this.$store.state.products.find(x => x.ean_code == current.EAN);
+                    product.stock_quantity = product.stock_quantity - current.Anzahl;
+                    product.updateProduct(product);
+                  } else if (current.Status == "Bitte Aufnehmen") {
+                    const product = this.$store.state.products.find(x => x.ean_code == current.EAN);
+                    product.stock_quantity = product.stock_quantity + current.Anzahl;
+                    product.updateProduct(product);
+                  }
               }
             })
             .catch((error) => {

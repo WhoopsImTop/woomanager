@@ -71,18 +71,79 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-col cols="12">
+      <v-col cols="6">
         <h3>Bestseller</h3>
         <v-list dark class="glass2">
           <v-list-item-group dark>
             <v-list-item v-for="(item, i) in topseller" :key="i">
               <v-list-item-content>
                 <v-list-item-title v-text="item.name"></v-list-item-title>
-                <v-list-item-subtitle>{{item.total_sales}}x Verkauft</v-list-item-subtitle>
+                <v-list-item-subtitle
+                  >{{ item.total_sales }}x Verkauft</v-list-item-subtitle
+                >
               </v-list-item-content>
             </v-list-item>
           </v-list-item-group>
         </v-list>
+      </v-col>
+      <v-col cols="6">
+        <h3>Einnahmenstatisktik Onlineshop</h3>
+        <v-row>
+          <v-col cols="4"
+            ><v-text-field
+              type="date"
+              v-model="startDate"
+              outlined
+              dark
+            ></v-text-field
+          ></v-col>
+          <v-col cols="4"
+            ><v-text-field
+              type="date"
+              v-model="endDate"
+              outlined
+              dark
+            ></v-text-field
+          ></v-col>
+          <v-col cols="4"
+            ><v-btn
+              color="primary"
+              block
+              :loading="sellStatsLoading"
+              @click="getSellStats()"
+              >Einschränken</v-btn
+            ></v-col
+          >
+        </v-row>
+        <v-row>
+          <v-col cols="4" class="glass px-4 py-2"
+            ><h4>Brutto</h4>
+            <span>{{ $store.state.sellingReport.total_sales }}€</span></v-col
+          >
+          <v-col cols="4" class="glass px-4 py-2"
+            ><h4>Netto</h4>
+            <span>{{ $store.state.sellingReport.net_sales }}€</span></v-col
+          >
+          <v-col cols="4" class="glass px-4 py-2"
+            ><h4>Bestellungen</h4>
+            <span>{{ $store.state.sellingReport.total_orders }}</span></v-col
+          >
+        </v-row>
+        <v-row>
+          <v-col cols="6" class="glass px-4 py-2"
+            ><h4>Bestellte Artikel</h4>
+            <span>{{ $store.state.sellingReport.total_items }}</span></v-col
+          >
+          <v-col cols="6" class="glass px-4 py-2 btn-danger"
+            ><h4>Rückgabenwert</h4>
+            <span>{{ $store.state.sellingReport.total_refunds }}€</span></v-col
+          >
+        </v-row>
+        <v-row class="glass mt-3">
+          <v-col cols="12">
+            <div id="sellChart" style="height: 180px"></div>
+          </v-col>
+        </v-row>
       </v-col>
     </v-row>
   </div>
@@ -91,12 +152,16 @@
 <script>
 import exportCSV from "../helpers/excelExporter";
 import axios from "axios";
+import { GoogleCharts } from "google-charts";
 
 export default {
   name: "Home",
   data: () => {
     return {
+      sellStatsLoading: false,
       filename: "",
+      startDate: "2022-03-01",
+      endDate: "2022-03-31",
       selectedFields: [],
       categorieFilter: [],
       loading: false,
@@ -143,8 +208,7 @@ export default {
       },
     };
   },
-  components: {
-  },
+  components: {},
   computed: {
     getOutOfStock() {
       return this.$store.state.outOfStock.length;
@@ -163,6 +227,7 @@ export default {
   },
   methods: {
     init() {
+      this.getSellStats();
       axios
         .get("https://bindis.rezept-zettel.de/api/requests/")
         .then((response) => {
@@ -171,6 +236,60 @@ export default {
             this.series[0].data.push(response.data[i].request);
           }
           this.chartOptions.tooltip.x.format = "dd/MM/yy HH:mm";
+        });
+    },
+    drawChart() {
+      let totalsData = [];
+
+      totalsData.push(["Datum", "Bestellungen"]);
+      let keys = Object.keys(this.$store.state.sellingReport.totals);
+      let values = Object.values(this.$store.state.sellingReport.totals);
+      for (let i = 0; i < keys.length; i++) {
+        totalsData.push([new Date(keys[i]).toLocaleDateString('de-DE'), parseFloat(values[i].sales)]);
+      }
+
+      let data = GoogleCharts.api.visualization.arrayToDataTable(totalsData);
+
+      let options = {
+        title: `Bestellungen zwischen ${new Date(
+          this.startDate
+        ).toLocaleDateString()} und ${new Date(
+          this.endDate
+        ).toLocaleDateString()}`,
+        hAxis: {
+          title: "Datum",
+        },
+        vAxis: {
+          title: "Bestellwert",
+        },
+        legend: "none",
+      };
+      var chart = new GoogleCharts.api.visualization.LineChart(
+        document.getElementById("sellChart")
+      );
+      chart.draw(data, options);
+    },
+    getSellStats() {
+      this.sellStatsLoading = true;
+      axios
+        .get(
+          `${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/reports/sales?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}&date_min=${
+            this.startDate
+          }&date_max=${this.endDate}`
+        )
+        .then((response) => {
+          this.$store.state.sellingReport = response.data[0];
+
+          GoogleCharts.load(this.drawChart);
+          this.sellStatsLoading = false;
+        })
+        .catch((error) => {
+          console.log(error);
+          this.sellStatsLoading = false;
         });
     },
     async ExportSold() {
