@@ -145,7 +145,7 @@
                       <v-combobox
                         dark
                         class="my-5"
-                        v-model="editedItem.status"
+                        v-model="newStatus.status"
                         :items="statusItems"
                         item-text="name"
                         item-value="value"
@@ -422,10 +422,7 @@ export default {
     dialogLoading: false,
     imgLoading: false,
     suche: "",
-    status: {
-      name: "Entwurf",
-      value: "draft",
-    },
+    newStatus: "",
     statusItems: [
       {
         name: "Entwurf",
@@ -496,7 +493,6 @@ export default {
   components: {
     imageEditorPopup,
   },
-
   computed: {
     formTitle() {
       return this.editedIndex === -1 ? "Neues Produkt" : "Produkt bearbeiten";
@@ -523,6 +519,9 @@ export default {
     },
     dialogDelete(val) {
       val || this.closeDelete();
+    },
+    newStatus: function (val) {
+      this.editedItem.status = val.status.value;
     },
   },
 
@@ -655,6 +654,7 @@ export default {
           });
         });
       }
+      this.newStatus = this.TranslateStatus(item.status);
       this.editedItem = item;
       this.dialog = true;
     },
@@ -750,7 +750,6 @@ export default {
           this.$store.state.products[this.editedIndex],
           this.editedItem
         );
-        this.editedItem.status = this.status.value;
         this.editedItem.manage_stock = true;
         const message = await this.editedItem.updateProduct(this.editedItem);
         if (message === "success") {
@@ -785,7 +784,6 @@ export default {
           key: "_wpm_gtin_code",
           value: this.editedItem.ean_code,
         });
-        this.editedItem.status = this.status.value;
         let product = new productClass(this.editedItem);
         const message = await product.createProduct();
         if (message === "success") {

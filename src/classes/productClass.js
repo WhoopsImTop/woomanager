@@ -8,7 +8,7 @@ export default class Product {
     this.regular_price = data.regular_price
     this.sale_price = data.sale_price
     this.images = data.images
-    this.description = data.description
+    this.description = data.description.replace(/(<([^>]+)>)/gi, "");
     this.categories = data.categories
     this.tags = data.tags
     this.backordered = data.false
