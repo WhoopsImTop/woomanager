@@ -11,9 +11,9 @@ export default class Product {
     this.description = data.description.replace(/(<([^>]+)>)/gi, "");
     this.categories = data.categories
     this.tags = data.tags
-    this.backordered = data.false
+    this.backordered = false
     this.manage_stock = true
-    this.stock_quantity = data.stock_quantity
+    this.stock_quantity = data.stock_quantity ? data.stock_quantity : 0
     this.manage_stock = data.manage_stock
     this.date_on_sale_from = data.date_on_sale_from
       ? data.date_on_sale_from.substring(0, 10)

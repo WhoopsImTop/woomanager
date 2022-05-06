@@ -190,7 +190,6 @@ export default {
       this.loading = true;
       let scan = new Scan(Search);
       scan.checkProductsforEan();
-      console.log(scan.ean, scan.product)
       this.loading = false;
 
       /* let index = await this.$store.state.products.findIndex(

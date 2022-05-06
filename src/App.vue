@@ -374,7 +374,8 @@
 <script>
 import axios from "axios";
 import io from "socket.io-client";
-import productClass from './classes/productClass.js';
+//import productClass from './classes/productClass.js';
+import getProducts from './helpers/initialLoad.js';
 
 export default {
   data: () => {
@@ -628,7 +629,9 @@ export default {
     },
     getData() {
       this.loading = true;
-      axios
+      getProducts(1);
+      this.loading = false;
+      /* axios
         .get(
           `${localStorage.getItem(
             "shopURL"
@@ -750,7 +753,7 @@ export default {
         .catch((e) => {
           console.log(e);
         });
-      this.getOrders();
+      this.getOrders(); */
     },
     getOrders() {
       axios
