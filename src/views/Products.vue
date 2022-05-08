@@ -145,10 +145,9 @@
                       <v-combobox
                         dark
                         class="my-5"
-                        v-model="newStatus.status"
+                        v-model="editedItem.status"
                         :items="statusItems"
-                        item-text="name"
-                        item-value="value"
+                        @change="editedItem.TranslateStatus(newStatus)"
                         label="Status"
                       >
                       </v-combobox>
@@ -174,7 +173,7 @@
                       </v-col>
                       <div
                         v-for="image in editedItem.images"
-                        :key="image"
+                        :key="image.id"
                         style="position: relative"
                       >
                         <v-btn
@@ -355,9 +354,12 @@
       <template v-slot:item.image="{ item }">
         <div class="p-2">
           <v-img
-            v-if="item.images.length > 0"
-            :src="item.images[0].src"
-            :alt="item.name"
+            :src="
+              item.images[0].src
+                ? item.images[0].src
+                : 'https://bindis-schaulaedle.de/wp-content/uploads/woocommerce-placeholder.png'
+            "
+            :alt="item.src"
             height="75px"
             width="75px"
           ></v-img>
@@ -423,16 +425,7 @@ export default {
     imgLoading: false,
     suche: "",
     newStatus: "",
-    statusItems: [
-      {
-        name: "Entwurf",
-        value: "draft",
-      },
-      {
-        name: "Öffentlich",
-        value: "publish",
-      },
-    ],
+    statusItems: ["Entwurf", "Freigabe", "Öffentlich"],
     headers: [
       {
         text: "Bild",
@@ -520,9 +513,6 @@ export default {
     dialogDelete(val) {
       val || this.closeDelete();
     },
-    newStatus: function (val) {
-      this.editedItem.status = val.status.value;
-    },
   },
 
   beforeMount() {
@@ -537,6 +527,7 @@ export default {
       this.category = this.$store.state.categories;
       this.tags = this.$store.state.tags;
     },
+
     TranslateType(type) {
       if (type == "simple") {
         return "Einfaches Produkt";
@@ -544,6 +535,7 @@ export default {
         return "Variables Produkt";
       }
     },
+
     DateFormatter(date) {
       let newDate = new Date(date);
       let day = newDate.getDate();
@@ -555,27 +547,22 @@ export default {
         day + "." + month + "." + year + " " + hour + ":" + minute + " Uhr"
       );
     },
+
     duplicateItemConfirm() {
       this.dialogLoading = true;
-      axios
-        .post(
-          `${localStorage.getItem(
-            "shopURL"
-          )}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem(
-            "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}`,
-          {
-            name: this.editedItem.name + " - Duplikat",
-            manage_stock: true,
-            categories: this.editedItem.categories,
-            tags: this.editedItem.tags,
-            description: this.editedItem.description,
-            status: "draft",
-          }
-        )
-        .then((res) => {
+      let name = this.editedItem.name + " (Duplikat)";
+      let productData = {
+        name: name,
+        categories: this.editedItem.categories,
+        tags: this.editedItem.tags,
+        description: this.editedItem.description,
+        status: 'status'
+      }
+      let duplicatedProduct = new productClass(productData);
+      duplicatedProduct
+        .createProduct()
+        .then(() => {
           this.dialogLoading = false;
-          this.$store.state.products.unshift(res.data);
           this.closeDuplication();
         })
         .catch((e) => {
@@ -599,6 +586,13 @@ export default {
           color: "#1674CFFF",
           icon: "mdi-earth",
         };
+      } else if (status === "pending") {
+        return {
+          status: "Bitte Freigeben",
+          default: "pending",
+          color: "#CF7716FF",
+          icon: "mdi-file-check-outline",
+        };
       } else {
         return {
           status: "Bitte Nochmal Speichern",
@@ -606,6 +600,16 @@ export default {
           color: "#666666",
           icon: "mdi-file-clock-outline",
         };
+      }
+    },
+
+    TranslateSelectStatus(status) {
+      if (status === "draft") {
+        return "Entwurf";
+      } else if (status === "publish") {
+        return "Öffentlich";
+      } else {
+        return "Bitte Nochmal Speichern";
       }
     },
 
@@ -654,7 +658,7 @@ export default {
           });
         });
       }
-      this.newStatus = this.TranslateStatus(item.status);
+      this.newStatus = this.TranslateStatus(item.status).status;
       this.editedItem = item;
       this.dialog = true;
     },
@@ -726,14 +730,6 @@ export default {
     async save() {
       this.btnLoading = true;
       if (this.editedIndex != -1) {
-        if (this.editedItem.meta_data[0].key === "_wpm_gtin_code") {
-          this.editedItem.meta_data[0].value = this.editedItem.ean_code;
-        } else {
-          this.editedItem.meta_data.push({
-            key: "_wpm_gtin_code",
-            value: this.editedItem.ean_code,
-          });
-        }
         try {
           this.$store.state.products[this.editedIndex].method = "Patch";
           this.$store.state.products[this.editedIndex].edited_at = new Date();

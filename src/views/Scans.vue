@@ -184,11 +184,20 @@ export default {
       }
     },
     async Scan(Search) {
-      if(Search == "" || Search.length < 6){
+      if (Search == "" || Search.length < 6) {
         return;
       }
+
       this.loading = true;
-      let scan = new Scan(Search);
+      let product = null;
+      for (let i = 0; i < this.$store.state.products.length; i++) {
+          if (this.$store.state.products[i].ean_code == Search) {
+            return product = this.$store.state.products[i];
+          } else {
+            return null;  
+          }
+        }
+      let scan = new Scan(Search, product);
       scan.checkProductsforEan();
       this.loading = false;
 
@@ -253,7 +262,7 @@ export default {
       this.selectedItem = item;
       this.dialog = true;
     },
-    async ReduceProduct (id, stock_quantity) {
+    async ReduceProduct(id, stock_quantity) {
       let newStock = stock_quantity - 1;
       axios.post(
         "https://bindis-schaulaedle.de/wp-json/wc/v3/products/" +

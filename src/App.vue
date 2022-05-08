@@ -1,26 +1,22 @@
 <template>
   <v-app dark>
-    <v-dialog persistent max-width="500" v-model="productLoading">
+    <v-dialog max-width="500" v-model="$store.state.globalLoading">
       <v-card dark class="glass2">
-        <v-card-title> Produkte werden geladen </v-card-title>
+        <v-card-title>Daten werden geladen</v-card-title>
         <v-divider class="mb-7"></v-divider>
         <v-card-text>
           <v-progress-linear indeterminate color="orange"></v-progress-linear>
-          <div v-if="!error">
-            {{ loadedProducts }} von {{ maxProducts }} Produkten geladen.
+          <div>
+            {{ $store.state.globalLoadingText }}
           </div>
-          <div v-else>
-            Beim laden der Produkte is ein Fehler aufgetreten. Bitte wähle unten
-            eine Aktion aus.
+          <div v-show="$store.state.globalLoadingText != 'Lade Produkte...'">
+            <br> Alle Produkte wurden geladen. Du kannst Kategorien, Schlagwörter und Bestellungen im Hintergrund weiterladen.
           </div>
         </v-card-text>
-        <v-divider v-show="error"></v-divider>
-        <v-card-actions v-show="error">
-          <v-btn text color="red" @click="error = false, loading = false">
-            >Trotzdem arbeiten</v-btn
-          >
-          <v-btn color="success" @click="window.location.reload()"
-            >Nochmal versuchen</v-btn
+        <v-divider v-show="$store.state.globalLoadingText  != 'Lade Produkte...'"></v-divider>
+        <v-card-actions v-show="$store.state.globalLoadingText  != 'Lade Produkte...'">
+          <v-btn text color="success" @click="$store.state.globalLoading = false">
+            Ja im Hintergrund laden</v-btn
           >
         </v-card-actions>
       </v-card>
@@ -628,132 +624,7 @@ export default {
       this.settingDialog = false;
     },
     getData() {
-      this.loading = true;
       getProducts(1);
-      this.loading = false;
-      /* axios
-        .get(
-          `${localStorage.getItem(
-            "shopURL"
-          )}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem(
-            "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}&per_page=100&page=1`
-        )
-        .then((res) => {
-          this.maxProducts = res.headers["x-wp-total"];
-          let page = res.headers["x-wp-totalpages"];
-          for (let i = 1; i <= page; i++) {
-            axios
-              .get(
-                `${localStorage.getItem(
-                  "shopURL"
-                )}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem(
-                  "ck"
-                )}&consumer_secret=${localStorage.getItem(
-                  "cs"
-                )}&per_page=100&page=${i}`
-              )
-              .then((res) => {
-                for (let x = 0; x < res.data.length; x++) {
-                  this.loadedProducts++;
-                  if (res.data[x].name != "") {
-                    this.$store.state.products.push(new productClass(res.data[x]));
-                  }
-                  if (
-                    res.data[x].stock_quantity <= 0 &&
-                    res.data[x].manage_stock == true &&
-                    res.data[x].name != ""
-                  ) {
-                    this.$store.state.outOfStock.push(res.data[x]);
-                  }
-                  if (
-                    this.loadedProducts == this.maxProducts &&
-                    this.loadedProducts != 0 &&
-                    this.maxProducts != 0
-                  ) {
-                    this.loading = false;
-                  }
-                }
-              });
-          }
-        })
-        .catch((e) => {
-          this.error = true;
-          console.log(e);
-        });
-      axios
-        .get(
-          `${localStorage.getItem(
-            "shopURL"
-          )}/wp-json/wc/v3/products/categories/?consumer_key=${localStorage.getItem(
-            "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}&per_page=100&page=1`
-        )
-        .then((res) => {
-          let page = res.headers["x-wp-totalpages"];
-          for (let i = 1; i <= page - 1; i++) {
-            axios
-              .get(
-                `${localStorage.getItem(
-                  "shopURL"
-                )}/wp-json/wc/v3/products/categories/?consumer_key=${localStorage.getItem(
-                  "ck"
-                )}&consumer_secret=${localStorage.getItem(
-                  "cs"
-                )}&per_page=100&page=${i}`
-              )
-              .then((res) => {
-                for (let x = 0; x < res.data.length; x++) {
-                  this.$store.state.categories.push(res.data[x]);
-                }
-              });
-          }
-        })
-        .catch((e) => {
-          this.error = true;
-          console.log(e);
-        });
-      axios
-        .get(
-          `${localStorage.getItem(
-            "shopURL"
-          )}/wp-json/wc/v3/products/tags/?consumer_key=${localStorage.getItem(
-            "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}&per_page=100&page=1`
-        )
-        .then((res) => {
-          let page = res.headers["x-wp-totalpages"];
-          for (let i = 1; i <= page - 1; i++) {
-            axios
-              .get(
-                `${localStorage.getItem(
-                  "shopURL"
-                )}/wp-json/wc/v3/products/tags/?consumer_key=${localStorage.getItem(
-                  "ck"
-                )}&consumer_secret=${localStorage.getItem(
-                  "cs"
-                )}&per_page=100&page=${i}`
-              )
-              .then((res) => {
-                for (let x = 0; x < res.data.length; x++) {
-                  this.$store.state.tags.push(res.data[x]);
-                }
-              });
-          }
-        })
-        .catch((e) => {
-          this.error = true;
-          console.log(e);
-        });
-      axios
-        .get("https://bindis.rezept-zettel.de/api/token")
-        .then((res) => {
-          this.$store.state.imageToken = res.data;
-        })
-        .catch((e) => {
-          console.log(e);
-        });
-      this.getOrders(); */
     },
     getOrders() {
       axios

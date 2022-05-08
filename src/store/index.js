@@ -24,6 +24,8 @@ export default new Vuex.Store({
         socket: null,
         users: [],
         timeTracking: new TimeRecording(),
+        globalLoading: false,
+        globalLoadingText: '',
     },
     mutations: {
         addToList(state, payload) {

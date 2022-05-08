@@ -7,10 +7,10 @@ export default class Product {
     this.name = data.name
     this.regular_price = data.regular_price
     this.sale_price = data.sale_price
-    this.images = data.images
-    this.description = data.description.replace(/(<([^>]+)>)/gi, "");
-    this.categories = data.categories
-    this.tags = data.tags
+    this.images = data.images ? data.images : []
+    this.description = data.description.replace(/(<([^>]+)>)/gi, '')
+    this.categories = data.categories ? data.categories : []
+    this.tags = data.tags ? data.tags : []
     this.backordered = false
     this.manage_stock = true
     this.stock_quantity = data.stock_quantity ? data.stock_quantity : 0
@@ -25,15 +25,33 @@ export default class Product {
     this.date_modified = data.date_modified
     this.dimensions = data.dimensions
     this.ean_code = data.ean_code
-    this.meta_data = data.meta_data
+    this.meta_data = [{
+      "key": "_wpm_gtin_code",
+      "value": data.ean_code,
+    }]
     this.sku = data.sku
-    this.status = data.status
+    this.status = this.TranslateStatus(data.status)
     this.permalink = data.permalink
     this.total_sales = data.total_sales
     this.type = data.type
     this.variations = data.variations
     if (this.variations && this.variations.length > 0) {
       this.getVariationData()
+    }
+  }
+
+  TranslateStatus(status) {
+    if(status === 'Entwurf' || status == 'Freigabe' || status === 'Öffentlich') {
+    switch (status) {
+      case 'Entwurf':
+        return 'draft'
+      case 'Freigabe':
+        return 'pending'
+      case 'Öffentlich':
+        return 'publish'
+    }
+    } else {
+      return status
     }
   }
 
@@ -75,9 +93,12 @@ export default class Product {
     this.date_modified = product.date_modified
     this.dimensions = product.dimensions
     this.ean_code = product.ean_code
-    this.meta_data = product.meta_data
+    this.meta_data = [{
+      "key": "_wpm_gtin_code",
+      "value": product.ean_code,
+    }]
     this.sku = product.sku
-    this.status = product.status
+    this.status = this.TranslateStatus(product.status)
     this.permalink = product.permalink
     this.total_sales = product.total_sales
     this.variations = product.variations
@@ -143,9 +164,12 @@ export default class Product {
     this.date_modified = product.date_modified
     this.dimensions = product.dimensions
     this.ean_code = product.ean_code
-    this.meta_data = product.meta_data
+    this.meta_data = [{
+      "key": "_wpm_gtin_code",
+      "value": product.ean_code,
+    }]
     this.sku = product.sku
-    this.status = product.status
+    this.status = this.TranslateStatus(product.status)
     this.permalink = product.permalink
     this.total_sales = product.total_sales
     this.variations = product.variations
@@ -161,7 +185,6 @@ export default class Product {
       metaData.value = ean
     } else {
       this.meta_data.push({
-        id: 0,
         key: '_wpm_gtin_code',
         value: ean,
       })
@@ -189,6 +212,12 @@ export default class Product {
   }
 
   createProduct() {
+    if(this.images.length === 0) {
+      this.images.push({
+        src: 'https://bindis-schaulaedle.de/wp-content/uploads/woocommerce-placeholder.png',
+        id: 0,
+      })
+    }
     //wait for response from server
     return new Promise((resolve, reject) => {
       axios
