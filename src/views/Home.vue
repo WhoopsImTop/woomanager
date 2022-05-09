@@ -1,9 +1,5 @@
 <template>
   <div class="my-4">
-    <v-btn class="btn-danger" large>
-      {{ getOutOfStock }} von {{ getProducts }} Produkten sind ausverkauft
-    </v-btn>
-    <v-divider dark class="my-4"></v-divider>
     <v-row cols="12">
       <v-col cols="6">
         <v-text-field outlined label="Dateiname" v-model="filename" dark>
@@ -141,7 +137,7 @@
         </v-row>
         <v-row class="glass mt-3">
           <v-col cols="12">
-            <div id="sellChart" style="height: 180px"></div>
+            <div id="sellChart" style="height: 366px"></div>
           </v-col>
         </v-row>
       </v-col>
@@ -222,7 +218,7 @@ export default {
       products.sort((a, b) => {
         return b.total_sales - a.total_sales;
       });
-      return products.slice(0, 7);
+      return products.slice(0, 10);
     },
   },
   methods: {

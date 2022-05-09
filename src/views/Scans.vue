@@ -60,10 +60,6 @@
               >
             </div>
           </template>
-
-          <template v-slot:item.actions="{ item }">
-            <v-icon small @click="removeProduct(item)"> mdi-delete </v-icon>
-          </template>
         </v-data-table>
       </v-col>
       <v-col
@@ -96,9 +92,9 @@
                 max-width: 200px;
                 overflow: hidden;
               "
-              >{{ item.name }}</span
+              >{{ item.product.name }}</span
             >
-            <span>{{ item.price }}</span>
+            <span>{{ item.product.regular_price }}</span>
           </div>
         </div>
         <div
@@ -111,7 +107,7 @@
           "
         >
           <hr />
-          <span style="font-family: monospace">Gesamt: {{ countPrices }}€</span>
+          <span style="font-family: monospace">Gesamt: {{ countPrices.toFixed(2) }}€</span>
         </div>
       </v-col>
     </v-row>
@@ -130,15 +126,13 @@ export default {
       headers: [
         { text: "EAN", align: "start", sortable: false, value: "ean" },
         { text: "Status", sortable: false, value: "status" },
-        { text: "Zeitstempel", sortable: true, value: "timestamp" },
-        { text: "Funktionen", align: "end", sortable: false, value: "actions" },
+        { text: "Zeitstempel", sortable: true, value: "timestamp" }
       ],
       scans: [],
       itemsPerPage: 10,
       loading: false,
       suche: "",
       searchParam: "",
-      foundScans: [],
       searchEANText: "",
       dialog: false,
       selectedItem: [],
@@ -153,13 +147,13 @@ export default {
   computed: {
     countPrices() {
       let price = 0;
-      for (let i = 0; i < this.foundScans.length; i++) {
+      for (let i = 0; i < this.$store.state.foundScans.length; i++) {
         if (
-          this.foundScans[i].price != "" &&
-          this.foundScans[i].price != null &&
-          this.foundScans[i].price != undefined
+          this.$store.state.foundScans[i].product.regular_price != "" &&
+          this.$store.state.foundScans[i].product.regular_price != null &&
+          this.$store.state.foundScans[i].product.regular_price != undefined
         ) {
-          price += JSON.parse(this.foundScans[i].price);
+          price += parseFloat(this.$store.state.foundScans[i].product.regular_price);
         }
       }
       return price;
@@ -187,42 +181,35 @@ export default {
       if (Search == "" || Search.length < 6) {
         return;
       }
-
-      this.loading = true;
-      let product = null;
-      for (let i = 0; i < this.$store.state.products.length; i++) {
-          if (this.$store.state.products[i].ean_code == Search) {
-            return product = this.$store.state.products[i];
-          } else {
-            return null;  
-          }
-        }
-      let scan = new Scan(Search, product);
-      scan.checkProductsforEan();
-      this.loading = false;
-
-      /* let index = await this.$store.state.products.findIndex(
+      let index = await this.$store.state.products.findIndex(
         (x) => x.ean_code === Search
       );
       if (Search != "") {
         if (index != -1) {
           this.searchEANText = "Produkt gefunden";
-          this.foundScans.push(this.$store.state.products[index]);
-          this.ReduceProduct(
-            this.$store.state.products[index].id,
-            this.$store.state.products[index].stock_quantity
+          let scan = new Scan(
+            Search,
+            "gefunden",
+            this.$store.state.products[index]
           );
+          this.$store.state.foundScans.unshift(scan);
+          scan.reductProductStock();
         } else {
           this.searchEANText = "Produkt nicht gefunden";
           let check = await this.serverProductChecker(Search);
           if (!check) {
-            this.SaveItem(Search, "nicht gefunden");
+            let scan = new Scan(
+              Search,
+              "nicht gefunden",
+              this.$store.state.products[index]
+            );
+            scan.addScan();
           }
         }
       }
       setTimeout(() => {
         this.searchEANText = "";
-      }, 1000); */
+      }, 1000);
     },
     async serverProductChecker(id) {
       let data = await axios
@@ -245,14 +232,6 @@ export default {
       } else {
         return false;
       }
-    },
-    async SaveItem(ean, status) {
-      this.eanCode = ean;
-      this.statusCode = status;
-      this.$store.state.socket.emit("addTodo", {
-        EAN: this.eanCode,
-        Status: this.statusCode,
-      });
     },
     removeItem() {
       this.selectedItem.deleteScan();
@@ -327,7 +306,7 @@ export default {
 
     setTimeout(() => {
       EANScanner.focus();
-    }, 1000);
+    }, 5000);
 
     this.$store.state.socket.on("updateTodo", (data) => {
       this.scans.splice(this.scans.indexOf(data), 1);

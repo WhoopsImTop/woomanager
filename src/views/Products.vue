@@ -7,7 +7,19 @@
       @croppedImage="UploadImage($event)"
     />
 
-    <h1 style="margin: 20px 0">Produkte</h1>
+    <div
+      style="display: flex; justify-content: space-between; align-items: center"
+    >
+      <h1 style="margin: 20px 0">Produkte</h1>
+      <!-- <v-switch
+        inset
+        v-model="showDraftOnly"
+        @click="filterProductsByStatus()"
+        :label="showDraftOnly ? 'Nur Entwürfe' : 'Alle'"
+        dark
+        color="warning"
+      ></v-switch> -->
+    </div>
     <v-data-table
       dark
       :headers="headers"
@@ -381,12 +393,29 @@
       <template v-slot:item.date="{ item }">
         <span>{{ DateFormatter(item.date_modified) }}</span>
       </template>
+
       <template v-slot:item.actions="{ item }">
-        <v-icon small class="mr-2" @click="DuplicateItem(item)">
-          mdi-content-duplicate
-        </v-icon>
-        <v-icon small class="mr-2" @click="editItem(item)"> mdi-pencil </v-icon>
-        <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
+        <div class="text-center">
+          <v-menu bottom offset-y>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn color="primary" dark v-bind="attrs" v-on="on">
+                Ich möchte
+              </v-btn>
+            </template>
+
+            <v-list dark>
+              <v-list-item link @click="editItem(item)">
+                <v-list-item-title>Produkt Bearbeiten</v-list-item-title>
+              </v-list-item>
+              <v-list-item link @click="DuplicateItem(item)">
+                <v-list-item-title>Produkt Duplizieren</v-list-item-title>
+              </v-list-item>
+              <v-list-item link @click="deleteItem(item)">
+                <v-list-item-title>Produkt Löschen</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
       </template>
       <template v-slot:no-data>
         <div id="err">
@@ -409,6 +438,7 @@ export default {
   data: () => ({
     showDraft: false,
     imgPopup: false,
+    showDraftOnly: false,
     dialog: false,
     duplicationDialog: false,
     dialogDelete: false,
@@ -452,7 +482,7 @@ export default {
       { text: "Preis", value: "regular_price" },
       { text: "Actions", value: "actions", sortable: false },
     ],
-    products: null,
+    backupProducts: null,
     editedIndex: -1,
     editedItem: {
       id: 0,
@@ -528,6 +558,20 @@ export default {
       this.tags = this.$store.state.tags;
     },
 
+    /* filterProductsByStatus() {
+      this.backupProducts = this.$store.state.products;
+      if (this.showDraftOnly) {
+        this.$store.state.products = this.$store.state.products.filter(
+          (product) => {
+            return product.status === "draft";
+          }
+        );
+      } else {
+        //show all products again
+        this.$store.state.products = this.backupProducts;
+      }
+    }, */
+
     TranslateType(type) {
       if (type == "simple") {
         return "Einfaches Produkt";
@@ -556,8 +600,8 @@ export default {
         categories: this.editedItem.categories,
         tags: this.editedItem.tags,
         description: this.editedItem.description,
-        status: 'status'
-      }
+        status: "status",
+      };
       let duplicatedProduct = new productClass(productData);
       duplicatedProduct
         .createProduct()

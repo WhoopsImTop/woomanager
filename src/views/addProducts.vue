@@ -65,8 +65,8 @@
         <v-list-item
           dark
           class="glass2"
-          v-for="item in $store.state.addList"
-          :key="item._id"
+          v-for="(item, index) in $store.state.addList"
+          :key="index"
         >
           <v-list-item-content>
             <v-row>
@@ -147,14 +147,13 @@ export default {
       if (EAN == "" || EAN.length < 6) {
         return;
       }
-      try {
-        let Product = this.$store.state.products.find((item) => {
-          if (item.ean_code == EAN) {
-            return item;
-          }
-        });
-        if (Product) {
-          this.currentProduct = Product;
+      try {      
+        let ProductIndex = this.$store.state.products.findIndex(
+        (x) => x.ean_code === EAN
+        );
+
+        if (ProductIndex != -1) {
+          this.currentProduct = this.$store.state.products[ProductIndex];
           this.addPopUp = true;
         } else {
           this.$store.state.socket.emit("addTodo", {
@@ -173,6 +172,7 @@ export default {
               EAN: EAN,
               Status: "Bitte Aufnehmen",
               Anzahl: 1,
+              TimeStamp: new Date().toLocaleString('de-DE'),
             });
           }
         }
