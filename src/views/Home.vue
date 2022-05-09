@@ -67,7 +67,7 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-col cols="6">
+      <v-col :cols="username != 'Geschäft' ? '6' : '12'">
         <h3>Bestseller</h3>
         <v-list dark class="glass2">
           <v-list-item-group dark>
@@ -82,7 +82,7 @@
           </v-list-item-group>
         </v-list>
       </v-col>
-      <v-col cols="6">
+      <v-col v-show="username != 'Geschäft'" cols="6">
         <h3>Einnahmenstatisktik Onlineshop</h3>
         <v-row>
           <v-col cols="4"
@@ -162,6 +162,7 @@ export default {
       categorieFilter: [],
       loading: false,
       tagFilter: [],
+      username: localStorage.getItem("userName"),
       stockFilter: 999,
       productFields: [
         "Produktname",
