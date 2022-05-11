@@ -11,7 +11,7 @@ export default class TimeRecording {
       if (this.time < 380) {
         this.endTime = new Date().toLocaleTimeString('de-DE')
         this.time = this.endTime - this.startTime
-        this.uploadTime()
+        this.saveTime()
       }
     })
   }

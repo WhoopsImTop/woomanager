@@ -113,7 +113,7 @@
                     <v-icon
                     small
                     class="mr-2"
-                    @click="modelDialog(item)"
+                    @click="deleteWorkTime(item)"
                     >
                     mdi-delete
                     </v-icon>
@@ -278,7 +278,19 @@ export default {
             return percentage;           
         },
     },
-    methods: {
+    methods: {        
+        
+        deleteWorkTime(item) {
+            axios.delete('https://bindis.rezept-zettel.de/api/zeiten/' + item._id)
+            .then(response => {
+                this.items = response.data;
+                this.getWorkTime();
+            })
+            .catch(error => {
+                console.log(error);
+            });
+        },
+
         calculateWorkTime(start, end) {
             let startTime = new Date(start);
             let endTime = new Date(end);

@@ -724,6 +724,14 @@ export default {
     });
 
     this.getData();
+    axios
+        .get("https://bindis.rezept-zettel.de/api/token")
+        .then((res) => {
+          this.$store.state.imageToken = res.data;
+        })
+        .catch((e) => {
+          console.log(e);
+        });
     this.getFromLocalStorage();
     if (localStorage.getItem("nav")) {
       let savedNav = JSON.parse(localStorage.getItem("nav"));
