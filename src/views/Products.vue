@@ -11,14 +11,13 @@
       style="display: flex; justify-content: space-between; align-items: center"
     >
       <h1 style="margin: 20px 0">Produkte</h1>
-      <!-- <v-switch
+      <v-switch
         inset
         v-model="showDraftOnly"
-        @click="filterProductsByStatus()"
-        :label="showDraftOnly ? 'Nur Entwürfe' : 'Alle'"
+        :label="showDraftOnly ? 'Nur Entwürfe' : 'Alle Produkte'"
         dark
         color="warning"
-      ></v-switch> -->
+      ></v-switch>
     </div>
     <v-data-table
       dark
@@ -522,16 +521,26 @@ export default {
     },
     searchProducts() {
       let searchName = this.suche.toLowerCase();
+      // check if search name is STRING or BOOLEAN
       return this.$store.state.products.filter((product) => {
-        return (
-          product.name.toLowerCase().includes(searchName) ||
-          product.sku.toLowerCase().includes(searchName.replace(/ /g, "")) ||
-          product.ean_code
-            .toLowerCase()
-            .includes(searchName.replace(/ /g, "")) ||
-          (product.id.toString().includes(searchName.replace(/ /g, "")) &&
-            product.status == searchName)
-        );
+        if (this.showDraftOnly) {
+          if (product.status === "draft") {
+            searchName = product.name
+              .toLowerCase()
+              .includes(this.suche.toLowerCase());
+            return searchName;
+          }
+        } else {
+          return (
+            product.name.toLowerCase().includes(searchName) ||
+            product.sku.toLowerCase().includes(searchName.replace(/ /g, "")) ||
+            product.ean_code
+              .toLowerCase()
+              .includes(searchName.replace(/ /g, "")) ||
+            (product.id.toString().includes(searchName.replace(/ /g, "")) &&
+              product.status == searchName)
+          );
+        }
       });
     },
   },
@@ -600,7 +609,7 @@ export default {
         categories: this.editedItem.categories,
         tags: this.editedItem.tags,
         description: this.editedItem.description,
-        status: "status",
+        status: "draft",
       };
       let duplicatedProduct = new productClass(productData);
       duplicatedProduct
