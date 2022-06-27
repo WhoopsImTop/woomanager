@@ -107,7 +107,9 @@
           "
         >
           <hr />
-          <span style="font-family: monospace">Gesamt: {{ countPrices.toFixed(2) }}€</span>
+          <span style="font-family: monospace"
+            >Gesamt: {{ countPrices.toFixed(2) }}€</span
+          >
         </div>
       </v-col>
     </v-row>
@@ -117,6 +119,7 @@
 <script>
 import axios from "axios";
 import Scan from "../classes/scanClass";
+import Product from "../classes/productClass";
 
 export default {
   data: () => {
@@ -126,7 +129,7 @@ export default {
       headers: [
         { text: "EAN", align: "start", sortable: false, value: "ean" },
         { text: "Status", sortable: false, value: "status" },
-        { text: "Zeitstempel", sortable: true, value: "timestamp" }
+        { text: "Zeitstempel", sortable: true, value: "timestamp" },
       ],
       scans: [],
       itemsPerPage: 10,
@@ -153,7 +156,9 @@ export default {
           this.$store.state.foundScans[i].product.regular_price != null &&
           this.$store.state.foundScans[i].product.regular_price != undefined
         ) {
-          price += parseFloat(this.$store.state.foundScans[i].product.regular_price);
+          price += parseFloat(
+            this.$store.state.foundScans[i].product.regular_price
+          );
         }
       }
       return price;
@@ -181,58 +186,35 @@ export default {
       if (Search == "" || Search.length < 6) {
         return;
       }
-      let index = await this.$store.state.products.findIndex(
-        (x) => x.ean_code === Search
-      );
-      if (Search != "") {
-        if (index != -1) {
-          this.searchEANText = "Produkt gefunden";
-          let scan = new Scan(
-            Search,
-            "gefunden",
-            this.$store.state.products[index]
-          );
-          this.$store.state.foundScans.unshift(scan);
-          scan.reductProductStock();
-        } else {
-          this.searchEANText = "Produkt nicht gefunden";
-          let check = await this.serverProductChecker(Search);
-          if (!check) {
+      axios
+        .get(
+          `${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}&search=${this.suche}`
+        )
+        .then((response) => {
+          if (response.data != []) {
+            this.searchEANText = "Produkt nicht gefunden";
             let scan = new Scan(
               Search,
               "nicht gefunden",
-              this.$store.state.products[index]
+              new Product(response.data)
             );
             scan.addScan();
+          } else {
+            this.searchEANText = "Produkt gefunden";
+            let scan = new Scan(Search, "gefunden", new Product(response.data));
+            this.$store.state.foundScans.unshift(scan);
+            scan.reductProductStock();
           }
-        }
-      }
+        });
       setTimeout(() => {
         this.searchEANText = "";
       }, 1000);
     },
-    async serverProductChecker(id) {
-      let data = await axios
-        .get(
-          `https://bindis-schaulaedle.de/wp-json/wc/v3/products/?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc&search=${id}`
-        )
-        .then((response) => {
-          return response.data;
-        });
-      if (data.length === 1) {
-        this.foundScans.push(data[0]);
-        this.scans.push({
-          Id: data[0].id,
-          EAN: data[0].ean_code,
-          Status: "gefunden",
-        });
-        this.$store.state.products.push(data[0]);
-        this.ReduceProduct(data[0].id, data[0].stock_quantity);
-        return true;
-      } else {
-        return false;
-      }
-    },
+
     removeItem() {
       this.selectedItem.deleteScan();
       this.dialog = false;

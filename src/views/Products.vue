@@ -10,19 +10,34 @@
     <div
       style="display: flex; justify-content: space-between; align-items: center"
     >
-      <h1 style="margin: 20px 0">Produkte</h1>
-      <v-switch
-        inset
-        v-model="showDraftOnly"
-        :label="showDraftOnly ? 'Nur Entwürfe' : 'Alle Produkte'"
-        dark
-        color="warning"
-      ></v-switch>
+      <v-row cols="12">
+        <v-col cols="10">
+          <h1 style="margin: 20px 0">Produkte</h1>
+        </v-col>
+
+        <v-col cols="2">
+          <v-combobox
+            inset
+            v-model="status"
+            :items="showDraftOnly"
+            @change="searchName()"
+            label="Zeige"
+            outlined
+            item-text="name"
+            item-value="value"
+            style="margin-top: 10px; margin-bottom: -20px"
+            dark
+            color="warning"
+          ></v-combobox>
+        </v-col>
+      </v-row>
     </div>
     <v-data-table
       dark
+      v-model="$store.state.selectedProducts"
+      show-select
       :headers="headers"
-      :items="searchProducts"
+      :items="$store.state.products"
       item-key="id"
       class="elevation-1 glass"
       :loading="dataLoading"
@@ -37,6 +52,7 @@
             class="cols-2"
             outlined
             label="Suche"
+            @change="searchName()"
             v-model="suche"
           >
           </v-text-field>
@@ -53,13 +69,7 @@
             item-value="name"
           >
           </v-combobox>
-          <v-checkbox
-            dark
-            label="Zeige Entwürfe"
-            @click="filterStatus()"
-            v-model="showDraft"
-            style="margin: 30px 10px 0; height: 56px"
-          ></v-checkbox> -->
+          -->
           <v-spacer></v-spacer>
           <v-dialog v-model="dialog">
             <template v-slot:activator="{ on, attrs }">
@@ -69,6 +79,7 @@
                 class="mb-2"
                 v-bind="attrs"
                 v-on="on"
+                @click="checkForSaved()"
               >
                 Neues Produkt
               </v-btn>
@@ -87,7 +98,7 @@
               </v-card-title>
 
               <v-card-text>
-                <v-container>
+                <v-container @input="saveCurrentProduct()">
                   <v-row>
                     <v-col cols="12" sm="6" md="4">
                       <v-text-field
@@ -99,6 +110,7 @@
                     <v-col cols="12" sm="6" md="4">
                       <v-text-field
                         dark
+                        type="number"
                         v-model="editedItem.ean_code"
                         label="EAN"
                       ></v-text-field>
@@ -106,6 +118,7 @@
                     <v-col cols="12" sm="6" md="4">
                       <v-text-field
                         dark
+                        type="number"
                         v-model="editedItem.stock_quantity"
                         label="Bestand"
                       ></v-text-field>
@@ -153,19 +166,31 @@
                       </v-combobox>
                     </v-col>
                     <v-col cols="12" sm="4" md="4">
-                      <v-combobox
-                        dark
-                        class="my-5"
-                        v-model="editedItem.status"
-                        :items="statusItems"
-                        @change="editedItem.TranslateStatus(newStatus)"
-                        label="Status"
-                      >
-                      </v-combobox>
+                      <v-radio-group dark row v-model="editedItem.status">
+                        <v-radio value="draft">
+                          <template v-slot:label>Entwurf</template>
+                        </v-radio>
+                        <v-radio value="pending">
+                          <template v-slot:label>
+                            <div>Ausstehend</div>
+                          </template>
+                        </v-radio>
+                        <v-radio value="future">
+                          <template v-slot:label>
+                            <div>Geplant</div>
+                          </template>
+                        </v-radio>
+                        <v-radio value="publish">
+                          <template v-slot:label>
+                            <div>Öffentlich</div>
+                          </template>
+                        </v-radio>
+                      </v-radio-group>
                     </v-col>
                     <v-col cols="12" sm="4" md="4">
                       <v-text-field
                         dark
+                        type="number"
                         class="my-5"
                         v-model="editedItem.regular_price"
                         label="Preis (€)"
@@ -437,7 +462,25 @@ export default {
   data: () => ({
     showDraft: false,
     imgPopup: false,
-    showDraftOnly: false,
+    status: "",
+    showDraftOnly: [
+      {
+        name: "Entwurf",
+        value: "draft",
+      },
+      {
+        name: "Ausstehend",
+        value: "pending",
+      },
+      {
+        name: "Geplant",
+        value: "future",
+      },
+      {
+        name: "Öffentlich",
+        value: "publish",
+      },
+    ],
     dialog: false,
     duplicationDialog: false,
     dialogDelete: false,
@@ -465,6 +508,7 @@ export default {
       {
         text: "Produkname",
         align: "start",
+        width: 300,
         sortable: false,
         value: "name",
       },
@@ -483,6 +527,20 @@ export default {
     ],
     backupProducts: null,
     editedIndex: -1,
+    whatToShow: [
+      {
+        name: "kein Filter Aktiv",
+        value: false,
+      },
+      {
+        name: "Entwurf",
+        value: "draft",
+      },
+      {
+        name: "kein Bild",
+        value: "no_image",
+      },
+    ],
     editedItem: {
       id: 0,
       name: "",
@@ -519,30 +577,6 @@ export default {
     formTitle() {
       return this.editedIndex === -1 ? "Neues Produkt" : "Produkt bearbeiten";
     },
-    searchProducts() {
-      let searchName = this.suche.toLowerCase();
-      // check if search name is STRING or BOOLEAN
-      return this.$store.state.products.filter((product) => {
-        if (this.showDraftOnly) {
-          if (product.status === "draft") {
-            searchName = product.name
-              .toLowerCase()
-              .includes(this.suche.toLowerCase());
-            return searchName;
-          }
-        } else {
-          return (
-            product.name.toLowerCase().includes(searchName) ||
-            product.sku.toLowerCase().includes(searchName.replace(/ /g, "")) ||
-            product.ean_code
-              .toLowerCase()
-              .includes(searchName.replace(/ /g, "")) ||
-            (product.id.toString().includes(searchName.replace(/ /g, "")) &&
-              product.status == searchName)
-          );
-        }
-      });
-    },
   },
 
   watch: {
@@ -559,6 +593,63 @@ export default {
   },
 
   methods: {
+    saveCurrentProduct() {
+      let item = this.editedItem
+      localStorage.setItem('backupProduct', item);
+    },
+
+    checkForSaved() {
+      console.log("Test")
+      if(this.editedIndex === -1) {
+        this.editedItem = localStorage.getItem('backupProduct')
+      }
+    },
+
+    searchName() {
+      this.dataLoading = true;
+      if (this.status == "") {
+        axios
+          .get(
+            `${localStorage.getItem(
+              "shopURL"
+            )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
+              "ck"
+            )}&consumer_secret=${localStorage.getItem("cs")}&search=${
+              this.suche
+            }`
+          )
+          .then((response) => {
+            this.$store.state.products = response.data;
+            this.dataLoading = false;
+          })
+          .catch((e) => {
+            this.$store.state.products = [];
+            console.log(e);
+            this.dataLoading = false;
+          });
+      } else {
+        axios
+          .get(
+            `${localStorage.getItem(
+              "shopURL"
+            )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
+              "ck"
+            )}&consumer_secret=${localStorage.getItem("cs")}&search=${
+              this.suche
+            }&status=${this.status.value}`
+          )
+          .then((response) => {
+            this.$store.state.products = response.data;
+            this.dataLoading = false;
+          })
+          .catch((e) => {
+            this.$store.state.products = [];
+            this.dataLoading = false;
+            console.log(e);
+          });
+      }
+    },
+
     init() {
       this.$store.state.products.sort((a, b) => {
         return new Date(b.date_modified) - new Date(a.date_modified);
@@ -566,20 +657,6 @@ export default {
       this.category = this.$store.state.categories;
       this.tags = this.$store.state.tags;
     },
-
-    /* filterProductsByStatus() {
-      this.backupProducts = this.$store.state.products;
-      if (this.showDraftOnly) {
-        this.$store.state.products = this.$store.state.products.filter(
-          (product) => {
-            return product.status === "draft";
-          }
-        );
-      } else {
-        //show all products again
-        this.$store.state.products = this.backupProducts;
-      }
-    }, */
 
     TranslateType(type) {
       if (type == "simple") {
@@ -643,6 +720,13 @@ export default {
         return {
           status: "Bitte Freigeben",
           default: "pending",
+          color: "#CF7716FF",
+          icon: "mdi-file-check-outline",
+        };
+      } else if (status === "future") {
+        return {
+          status: "Geplant",
+          default: "future",
           color: "#CF7716FF",
           icon: "mdi-file-check-outline",
         };
@@ -757,6 +841,7 @@ export default {
     },
 
     close() {
+      this.saveCurrentProduct()
       this.dialog = false;
       this.$nextTick(() => {
         this.editedItem = Object.assign({}, this.defaultItem);
@@ -829,10 +914,6 @@ export default {
         } catch (e) {
           console.log(e);
         }
-        this.editedItem.meta_data.push({
-          key: "_wpm_gtin_code",
-          value: this.editedItem.ean_code,
-        });
         let product = new productClass(this.editedItem);
         const message = await product.createProduct();
         if (message === "success") {
@@ -856,6 +937,21 @@ export default {
         }
       }
     },
+  },
+  created() {
+    const params = new Proxy(new URLSearchParams(window.location.search), {
+      get: (searchParams, prop) => searchParams.get(prop),
+    });
+
+    let ean_code = params.ean_code;
+    let stock_quantity = params.stock_quantity;
+    
+    if (ean_code && stock_quantity) {
+      this.editedItem.ean_code = ean_code;
+      this.editedItem.stock_quantity = stock_quantity;
+
+      this.dialog = true;
+    }
   },
 };
 </script>

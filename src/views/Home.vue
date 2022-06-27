@@ -67,22 +67,7 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-col :cols="username != 'Geschäft' ? '6' : '12'">
-        <h3>Bestseller</h3>
-        <v-list dark class="glass2">
-          <v-list-item-group dark>
-            <v-list-item v-for="(item, i) in topseller" :key="i">
-              <v-list-item-content>
-                <v-list-item-title v-text="item.name"></v-list-item-title>
-                <v-list-item-subtitle
-                  >{{ item.total_sales }}x Verkauft</v-list-item-subtitle
-                >
-              </v-list-item-content>
-            </v-list-item>
-          </v-list-item-group>
-        </v-list>
-      </v-col>
-      <v-col v-show="username != 'Geschäft'" cols="6">
+      <v-col v-show="username != 'Geschäft'" cols="12">
         <h3>Einnahmenstatisktik Onlineshop</h3>
         <v-row>
           <v-col cols="4"

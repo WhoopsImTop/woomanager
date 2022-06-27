@@ -26,6 +26,7 @@ export default new Vuex.Store({
         timeTracking: new TimeRecording(),
         globalLoading: false,
         globalLoadingText: '',
+        selectedProducts: [],
     },
     mutations: {
         addToList(state, payload) {

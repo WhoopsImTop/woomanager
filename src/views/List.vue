@@ -443,7 +443,7 @@
             </template>
 
             <v-list dark>
-              <v-list-item link @click="modelDialog(item)">
+              <v-list-item link @click="changeRoute(item)">
                 <v-list-item-title>Produkt Erstellen</v-list-item-title>
               </v-list-item>
               <v-list-item link :href="url + item.EAN" target="_blank">
@@ -562,6 +562,16 @@ export default {
     imageEditorPopup,
   },
   methods: {
+    changeRoute(item) {
+      //create queries
+      let ean = item.EAN;
+      let stock_quantity = item.Anzahl;
+
+      this.$router.push(
+        `/products?ean_code=${ean}&stock_quantity=${stock_quantity}`
+      );
+    },
+
     getLastEdited() {
       this.lastEditedPopup = true;
       axios
@@ -817,38 +827,38 @@ export default {
     async save() {
       this.btnLoading = true;
       try {
-          this.editedItem.method = "Post";
-          this.editedItem.edited_at = new Date();
-          this.editedItem.loading = false;
-          this.$store.commit("addToList", this.editedItem);
-        } catch (e) {
-          console.log(e);
-        }
-        this.editedItem.meta_data.push({
-          key: "_wpm_gtin_code",
-          value: this.editedItem.ean_code,
-        });
-        let product = new productClass(this.editedItem);
-        const message = await product.createProduct();
-        if (message === "success") {
-          this.btnLoading = false;
-          this.btnText = "Produkt erfolgreich erstellt";
-          this.btnColor = "success";
-          setTimeout(() => {
-            this.btnText = "speichern";
-            this.btnColor = "blue";
-            this.close();
-          }, 2000);
-        } else {
-          this.btnLoading = false;
-          this.btnText = "Produkt konnte nicht erstellt werden";
-          this.btnColor = "danger";
-          setTimeout(() => {
-            this.btnText = "speichern";
-            this.btnColor = "blue";
-            this.close();
-          }, 2000);
-        }
+        this.editedItem.method = "Post";
+        this.editedItem.edited_at = new Date();
+        this.editedItem.loading = false;
+        this.$store.commit("addToList", this.editedItem);
+      } catch (e) {
+        console.log(e);
+      }
+      this.editedItem.meta_data.push({
+        key: "_wpm_gtin_code",
+        value: this.editedItem.ean_code,
+      });
+      let product = new productClass(this.editedItem);
+      const message = await product.createProduct();
+      if (message === "success") {
+        this.btnLoading = false;
+        this.btnText = "Produkt erfolgreich erstellt";
+        this.btnColor = "success";
+        setTimeout(() => {
+          this.btnText = "speichern";
+          this.btnColor = "blue";
+          this.close();
+        }, 2000);
+      } else {
+        this.btnLoading = false;
+        this.btnText = "Produkt konnte nicht erstellt werden";
+        this.btnColor = "danger";
+        setTimeout(() => {
+          this.btnText = "speichern";
+          this.btnColor = "blue";
+          this.close();
+        }, 2000);
+      }
     },
   },
   async created() {

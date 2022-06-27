@@ -2,21 +2,23 @@ import axios from 'axios'
 import Product from '../classes/productClass'
 import store from '../store'
 
-function getProducts(page) {
+function getProducts() {
   store.state.globalLoading = true
   store.state.globalLoadingText = 'Lade Produkte...'
   axios
-    .get(`https://bindis-schaulaedle.de/wp-json/wc/v3/custom?page=${page}&per_page=500`)
+    .get(
+      `${localStorage.getItem(
+        'shopURL',
+      )}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem(
+        'ck',
+      )}&consumer_secret=${localStorage.getItem('cs')}&per_page=20`,
+    )
     .then((response) => {
-      if (response.data.length > 0) {
-        for (let i = 0; i < response.data.length; i++) {
-          let product = new Product(response.data[i])
-          store.state.products.unshift(product)
-        }
-        getProducts(page + 1)
-      } else {
-        getCategories(1)
+      for (let i = 0; i < response.data.length; i++) {
+        let product = new Product(response.data[i])
+        store.state.products.unshift(product)
       }
+      getCategories(1)
     })
 }
 

@@ -106,7 +106,7 @@
 
 <script>
 import axios from "axios";
-
+import Product from '../classes/productClass'
 export default {
   data: () => {
     return {
@@ -147,46 +147,40 @@ export default {
       if (EAN == "" || EAN.length < 6) {
         return;
       }
-      try {      
-        let ProductIndex = this.$store.state.products.findIndex(
-        (x) => x.ean_code === EAN
-        );
-
-        if (ProductIndex != -1) {
-          this.currentProduct = this.$store.state.products[ProductIndex];
-          this.addPopUp = true;
-        } else {
-          this.$store.state.socket.emit("addTodo", {
-            EAN: EAN,
-            Status: "Bitte Aufnehmen",
-          });
-          let found = this.$store.state.addList.find((item) => {
-            if (item.EAN == EAN) {
-              return item;
-            }
-          });
-          if (found) {
-            found.Anzahl++;
+      axios
+        .get(
+          `${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}&search=${this.suche}`
+        )
+        .then((response) => {
+          if (response.data != []) {
+            this.currentProduct = new Product(response.data);
+            this.addPopUp = true;
           } else {
-            this.$store.state.addList.unshift({
+            this.$store.state.socket.emit("addTodo", {
               EAN: EAN,
               Status: "Bitte Aufnehmen",
-              Anzahl: 1,
-              TimeStamp: new Date().toLocaleString('de-DE'),
             });
+            let found = this.$store.state.addList.find((item) => {
+              if (item.EAN == EAN) {
+                return item;
+              }
+            });
+            if (found) {
+              found.Anzahl++;
+            } else {
+              this.$store.state.addList.unshift({
+                EAN: EAN,
+                Status: "Bitte Aufnehmen",
+                Anzahl: 1,
+                TimeStamp: new Date().toLocaleString("de-DE"),
+              });
+            }
           }
-        }
-      } catch (error) {
-        console.log(error);
-        this.FailedScanList.push({
-          EAN: EAN,
-          Status: "Bitte Aufnehmen",
         });
-        localStorage.setItem(
-          "FailedScanList",
-          JSON.stringify(this.FailedScanList)
-        );
-      }
     },
     async updateStock() {
       console.log(this.currentProduct);

@@ -10,12 +10,22 @@
             {{ $store.state.globalLoadingText }}
           </div>
           <div v-show="$store.state.globalLoadingText != 'Lade Produkte...'">
-            <br> Alle Produkte wurden geladen. Du kannst Kategorien, Schlagwörter und Bestellungen im Hintergrund weiterladen.
+            <br />
+            Alle Produkte wurden geladen. Du kannst Kategorien, Schlagwörter und
+            Bestellungen im Hintergrund weiterladen.
           </div>
         </v-card-text>
-        <v-divider v-show="$store.state.globalLoadingText  != 'Lade Produkte...'"></v-divider>
-        <v-card-actions v-show="$store.state.globalLoadingText  != 'Lade Produkte...'">
-          <v-btn text color="success" @click="$store.state.globalLoading = false">
+        <v-divider
+          v-show="$store.state.globalLoadingText != 'Lade Produkte...'"
+        ></v-divider>
+        <v-card-actions
+          v-show="$store.state.globalLoadingText != 'Lade Produkte...'"
+        >
+          <v-btn
+            text
+            color="success"
+            @click="$store.state.globalLoading = false"
+          >
             Ja im Hintergrund laden</v-btn
           >
         </v-card-actions>
@@ -70,10 +80,7 @@
       </v-card>
     </v-dialog>
 
-    <v-app-bar 
-    class="top-bar" 
-    app
-      >
+    <v-app-bar class="top-bar" app>
       <v-toolbar-title
         ><a
           style="color: #c3c3ce; text-decoration: none"
@@ -83,69 +90,59 @@
         ></v-toolbar-title
       >
       <v-spacer></v-spacer>
-      <v-menu      
-      v-show="workTimeActive == true"
-      v-model="menu"
-      :close-on-content-click="false"
-      :nudge-width="200"
-      offset-x
+      <v-menu
+        v-show="workTimeActive == true"
+        v-model="menu"
+        :close-on-content-click="false"
+        :nudge-width="200"
+        offset-x
       >
-      <template v-slot:activator="{ on, attrs }">
-        <v-btn
-          v-show="workTimeActive == true"
-          outlined
-          text
-          dark
-          v-bind="attrs"
-          v-on="on"
-        >
-        <v-icon
-          dark
-          small
-          class="mr-2"
-        >
-          mdi-clock-outline
-        </v-icon>
-          Arbeitszeit
-        </v-btn>
-      </template>
-
-      <v-card dark class="glass2">
-        <v-list style="background-color: unset !important">
-          <v-list-item>
-            <v-list-item-content>
-              <v-list-item-title> {{ UserName }} </v-list-item-title>
-            </v-list-item-content>
-          </v-list-item>
-        </v-list>
-
-        <v-divider></v-divider>
-
-        <v-list style="background-color: unset !important">
-          <v-list-item v-show="eingestempelt">
-            <v-list-item-title class="text-center">{{ this.$store.state.timeTracking.time ? this.$store.state.timeTracking.getCurrentTimeRecording() : "00:00:00" }}</v-list-item-title>
-          </v-list-item>
-
-          <v-list-item v-show="!eingestempelt">
-            <v-btn 
-            text
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            v-show="workTimeActive == true"
             outlined
-            dark
-            block
-            @click="checkIn()"
-            >Einstempeln</v-btn>
-          </v-list-item>
-          <v-list-item v-show="eingestempelt">
-            <v-btn 
             text
-            outlined
             dark
-            block
-            @click="checkOut()"
-            >Ausstempeln</v-btn>
-          </v-list-item>
-        </v-list>
-      </v-card>
+            v-bind="attrs"
+            v-on="on"
+          >
+            <v-icon dark small class="mr-2"> mdi-clock-outline </v-icon>
+            Arbeitszeit
+          </v-btn>
+        </template>
+
+        <v-card dark class="glass2">
+          <v-list style="background-color: unset !important">
+            <v-list-item>
+              <v-list-item-content>
+                <v-list-item-title> {{ UserName }} </v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list>
+
+          <v-divider></v-divider>
+
+          <v-list style="background-color: unset !important">
+            <v-list-item v-show="eingestempelt">
+              <v-list-item-title class="text-center">{{
+                this.$store.state.timeTracking.time
+                  ? this.$store.state.timeTracking.getCurrentTimeRecording()
+                  : "00:00:00"
+              }}</v-list-item-title>
+            </v-list-item>
+
+            <v-list-item v-show="!eingestempelt">
+              <v-btn text outlined dark block @click="checkIn()"
+                >Einstempeln</v-btn
+              >
+            </v-list-item>
+            <v-list-item v-show="eingestempelt">
+              <v-btn text outlined dark block @click="checkOut()"
+                >Ausstempeln</v-btn
+              >
+            </v-list-item>
+          </v-list>
+        </v-card>
       </v-menu>
 
       <div>
@@ -156,19 +153,16 @@
           v-show="$store.state.users.length > 0"
         >
           <template v-slot:activator="{ on, attrs }">
-            <v-chip
-              class="mx-2"
-              dark
-              label
-              v-bind="attrs"
-              v-on="on"
-              color="success"
-            >
-              <v-icon small class="mr-4">mdi-account</v-icon>
-              <span>{{ user.name }}</span>
-            </v-chip>
+            <v-avatar class="mx-1" color="success" rounded size="32" v-bind="attrs" v-on="on">
+              <span class="white--text text-h5">{{
+                user.name[0].toUpperCase()
+              }}</span>
+            </v-avatar>
           </template>
-          <span>{{ wichPath(user.url) }}</span>
+          <v-col>
+            <span><strong>Name:</strong> {{ user.name }}</span><br>
+            <span><strong>Seite:</strong> {{ wichPath(user.url) }}</span>
+          </v-col>
         </v-tooltip>
 
         <v-btn icon dark @click="showLatestEdited = !showLatestEdited">
@@ -371,7 +365,7 @@
 import axios from "axios";
 import io from "socket.io-client";
 //import productClass from './classes/productClass.js';
-import getProducts from './helpers/initialLoad.js';
+import getProducts from "./helpers/initialLoad.js";
 
 export default {
   data: () => {
@@ -452,7 +446,7 @@ export default {
           to: "/fastEdit",
           icon: "./static/edit.svg",
           active: true,
-        }
+        },
       ],
       settingDialog: false,
       customerKey: "",
@@ -475,7 +469,7 @@ export default {
   },
   computed: {
     productLoading() {
-      return this.loading && localStorage.getItem('ck') ? true : false;
+      return this.loading && localStorage.getItem("ck") ? true : false;
     },
     workTimeActive() {
       let index = this.links.findIndex((link) => link.name == "Arbeitszeit");
@@ -561,9 +555,9 @@ export default {
       this.$store.state.latestEdited[index].loading = true;
       axios
         .patch(
-          `${localStorage.getItem(
-            "shopURL"
-          )}/wp-json/wc/v3/products/${item.id}/?consumer_key=${localStorage.getItem(
+          `${localStorage.getItem("shopURL")}/wp-json/wc/v3/products/${
+            item.id
+          }/?consumer_key=${localStorage.getItem(
             "ck"
           )}&consumer_secret=${localStorage.getItem("cs")}`,
           item
@@ -705,14 +699,14 @@ export default {
     this.$store.state.socket = io("https://bindis.rezept-zettel.de");
     this.$store.state.socket.on("connect", () =>
       this.$store.state.socket.emit("hello", {
-        name: localStorage.getItem("userName") || "Geschäft",        
+        name: localStorage.getItem("userName") || "Geschäft",
         workTimeId: localStorage.getItem("workTimeUser"),
         url: this.$route.path,
       })
     );
 
     this.$store.state.socket.on("checkIn", (data) => {
-      this.CheckIn = data
+      this.CheckIn = data;
     });
 
     this.$store.state.socket.on("currentUsers", (data) => {
@@ -725,13 +719,13 @@ export default {
 
     this.getData();
     axios
-        .get("https://bindis.rezept-zettel.de/api/token")
-        .then((res) => {
-          this.$store.state.imageToken = res.data;
-        })
-        .catch((e) => {
-          console.log(e);
-        });
+      .get("https://bindis.rezept-zettel.de/api/token")
+      .then((res) => {
+        this.$store.state.imageToken = res.data;
+      })
+      .catch((e) => {
+        console.log(e);
+      });
     this.getFromLocalStorage();
     if (localStorage.getItem("nav")) {
       let savedNav = JSON.parse(localStorage.getItem("nav"));
@@ -739,10 +733,10 @@ export default {
         this.links[i].active = savedNav[i].active;
       }
     }
-    window.addEventListener('offline', () => {
+    window.addEventListener("offline", () => {
       this.offline = true;
     });
-    window.addEventListener('online', () => {
+    window.addEventListener("online", () => {
       this.offline = false;
     });
     if (this.$workbox) {
