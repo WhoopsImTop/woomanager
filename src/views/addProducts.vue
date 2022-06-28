@@ -4,82 +4,44 @@
       <v-card class="glass">
         <v-card-title>Produkt existiert</v-card-title>
         <v-card-text>
-          <v-text-field
-            outlined
-            label="Name"
-            disabled
-            dark
-            v-model="currentProduct.name"
-          ></v-text-field>
+          <v-text-field outlined label="Name" disabled dark v-model="currentProduct.name"></v-text-field>
 
-          <v-text-field
-            label="Wie viele Produkte sind gekommen?"
-            dark
-            v-model="newStock"
-          ></v-text-field>
+          <v-text-field label="Wie viele Produkte sind gekommen?" dark v-model="newStock"></v-text-field>
 
-          <v-text-field
-            label="Preis"
-            dark
-            v-model="currentProduct.regular_price"
-          ></v-text-field>
+          <v-text-field label="Preis" dark v-model="currentProduct.regular_price"></v-text-field>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn color="gray darken-1" text @click="addPopUp = false">
             Abbrechen
           </v-btn>
-          <v-btn
-            color="blue darken-1"
-            text
-            :loading="btnLoading"
-            @click="updateStock"
-          >
+          <v-btn color="blue darken-1" text :loading="btnLoading" @click="updateStock">
             Hinzufügen
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
     <h1 style="margin: 20px 0">Bitte Aufnehmen</h1>
-    <v-sheet
-      class="glass mb-3"
-      style="
+    <v-sheet class="glass mb-3" style="
         display: flex;
         flex-direction: row;
         justify-content: center;
         align-items: center;
-      "
-    >
-      <v-text-field
-        id="search"
-        class="mt-6 ml-3 mr-3"
-        dark
-        v-model="Search"
-        label="Suche"
-        outlined
-        @input="onScan"
-      ></v-text-field>
+      ">
+      <v-text-field id="search" class="mt-6 ml-3 mr-3" dark v-model="Search" label="Suche" outlined @input="onScan">
+      </v-text-field>
     </v-sheet>
     <v-list v-if="$store.state.addList.length > 0" class="glass" nav dense>
       <v-list-item-group class="my-5" v-model="selectedItem" color="primary">
-        <v-list-item
-          dark
-          class="glass2"
-          v-for="(item, index) in $store.state.addList"
-          :key="index"
-        >
+        <v-list-item dark class="glass2" v-for="(item, index) in $store.state.addList" :key="index">
           <v-list-item-content>
             <v-row>
               <v-col>
                 <v-list-item-title v-text="item.EAN"></v-list-item-title>
-                <v-list-item-subtitle
-                  v-text="item.TimeStamp"
-                ></v-list-item-subtitle>
+                <v-list-item-subtitle v-text="item.TimeStamp"></v-list-item-subtitle>
               </v-col>
               <v-col>
-                <v-list-item-subtitle
-                  >{{ item.Anzahl }} x gescannt</v-list-item-subtitle
-                >
+                <v-list-item-subtitle>{{ item.Anzahl }} x gescannt</v-list-item-subtitle>
               </v-col>
             </v-row>
           </v-list-item-content>
@@ -95,10 +57,8 @@
       <v-card-title>Du hast bis jetzt keine Artikel gescannt</v-card-title>
       <v-divider></v-divider>
       <v-card-text>
-        <span
-          >Jetzt einfach Produkte Scannen, die du als
-          <i>"Bitte Aufnehmen"</i> speichern willst.</span
-        >
+        <span>Jetzt einfach Produkte Scannen, die du als
+          <i>"Bitte Aufnehmen"</i> speichern willst.</span>
       </v-card-text>
     </v-card>
   </div>
@@ -153,11 +113,11 @@ export default {
             "shopURL"
           )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
             "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}&search=${this.suche}`
+          )}&consumer_secret=${localStorage.getItem("cs")}&search=${EAN}`
         )
         .then((response) => {
           if (response.data != []) {
-            this.currentProduct = new Product(response.data);
+            this.currentProduct = new Product(response.data[0]);
             this.addPopUp = true;
           } else {
             this.$store.state.socket.emit("addTodo", {
@@ -184,10 +144,17 @@ export default {
     },
     async updateStock() {
       console.log(this.currentProduct);
-      this.currentProduct.stock_quantity =
-        parseInt(this.currentProduct.stock_quantity) + parseInt(this.newStock);
+      let current;
+      this.$store.state.products.find((item) => {
+        if (item.id == this.currentProduct.id) {
+          current = item;
+          return
+        }
+      })
+      current.stock_quantity =
+        parseInt(current.stock_quantity) + parseInt(this.newStock);
       this.btnLoading = true;
-      await this.currentProduct.updateProduct(this.currentProduct);
+      await current.updateProduct(current);
       this.btnLoading = false;
       this.addPopUp = false;
     },

@@ -18,6 +18,9 @@ function getProducts() {
         let product = new Product(response.data[i])
         store.state.products.unshift(product)
       }
+      store.state.products.sort((a, b) => {
+        return new Date(b.date_modified) - new Date(a.date_modified);
+      });
       getCategories(1)
     })
 }

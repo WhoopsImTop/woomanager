@@ -122,15 +122,13 @@ export default class Product {
         return new Promise((resolve, reject) => {
             axios
                 .patch(
-                    `${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/${
-            this.id
-          }?consumer_key=${localStorage.getItem(
-            'ck',
-          )}&consumer_secret=${localStorage.getItem('cs')}`,
+                    `${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/${this.id
+                    }?consumer_key=${localStorage.getItem(
+                        'ck',
+                    )}&consumer_secret=${localStorage.getItem('cs')}`,
                     this,
                 )
-                .then((response) => {
-                    this.updateFields(response.data)
+                .then(() => {
                     resolve('success')
                 })
                 .catch((error) => {
@@ -174,7 +172,7 @@ export default class Product {
 
     updateEAN(ean) {
         this.ean_code = ean
-            //find _wpm_gtin_code meta data
+        //find _wpm_gtin_code meta data
         let metaData = this.meta_data.find((meta) => {
             return meta.key === '_wpm_gtin_code'
         })
@@ -190,11 +188,10 @@ export default class Product {
         return new Promise((resolve, reject) => {
             axios
                 .patch(
-                    `${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/${
-            this.id
-          }?consumer_key=${localStorage.getItem(
-            'ck',
-          )}&consumer_secret=${localStorage.getItem('cs')}`,
+                    `${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/${this.id
+                    }?consumer_key=${localStorage.getItem(
+                        'ck',
+                    )}&consumer_secret=${localStorage.getItem('cs')}`,
                     this,
                 )
                 .then((response) => {
@@ -220,10 +217,10 @@ export default class Product {
             axios
                 .post(
                     `${localStorage.getItem(
-            'shopURL',
-          )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
-            'ck',
-          )}&consumer_secret=${localStorage.getItem('cs')}`,
+                        'shopURL',
+                    )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
+                        'ck',
+                    )}&consumer_secret=${localStorage.getItem('cs')}`,
                     this,
                 )
                 .then((response) => {
@@ -243,13 +240,11 @@ export default class Product {
             let data = new Promise((resolve, reject) => {
                 axios
                     .get(
-                        `${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/${
-              this.id
-            }/variations/${
-              this.variations[i]
-            }?consumer_key=${localStorage.getItem(
-              'ck',
-            )}&consumer_secret=${localStorage.getItem('cs')}`,
+                        `${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/${this.id
+                        }/variations/${this.variations[i]
+                        }?consumer_key=${localStorage.getItem(
+                            'ck',
+                        )}&consumer_secret=${localStorage.getItem('cs')}`,
                     )
                     .then((response) => {
                         return resolve(response.data)
@@ -269,11 +264,10 @@ export default class Product {
         this.variations
             .forEach((variation) => {
                 axios.patch(
-                    `${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/${
-            this.id
-          }/variations/${variation.id}?consumer_key=${localStorage.getItem(
-            'ck',
-          )}&consumer_secret=${localStorage.getItem('cs')}`,
+                    `${localStorage.getItem('shopURL')}/wp-json/wc/v3/products/${this.id
+                    }/variations/${variation.id}?consumer_key=${localStorage.getItem(
+                        'ck',
+                    )}&consumer_secret=${localStorage.getItem('cs')}`,
                     variation,
                 )
             })

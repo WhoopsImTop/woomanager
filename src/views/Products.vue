@@ -1,60 +1,47 @@
 <template>
   <div>
-    <imageEditorPopup
-      @closeImagePopup="imgPopup = false"
-      :imagePopup="imgPopup"
-      :loading="imgLoading"
-      @croppedImage="UploadImage($event)"
-    />
+    <imageEditorPopup @closeImagePopup="imgPopup = false" :imagePopup="imgPopup" :loading="imgLoading"
+      @croppedImage="UploadImage($event)" />
 
-    <div
-      style="display: flex; justify-content: space-between; align-items: center"
-    >
+    <div style="display: flex; justify-content: space-between; align-items: center">
       <v-row cols="12">
-        <v-col cols="10">
+        <v-col :cols="$store.state.selectedProducts.length > 0 ? 4 : 8">
           <h1 style="margin: 20px 0">Produkte</h1>
         </v-col>
 
+        <v-col v-show="$store.state.selectedProducts.length > 0" cols="2">
+          <v-combobox inset v-model="batchStatus" :items="showDraftOnly" label="Status Zuweisen" outlined
+            item-text="name" item-value="value" style="margin-top: 10px; margin-bottom: -20px" dark color="warning">
+          </v-combobox>
+        </v-col>
+
         <v-col cols="2">
-          <v-combobox
-            inset
-            v-model="status"
-            :items="showDraftOnly"
-            @change="searchName()"
-            label="Zeige"
-            outlined
-            item-text="name"
-            item-value="value"
-            style="margin-top: 10px; margin-bottom: -20px"
-            dark
-            color="warning"
-          ></v-combobox>
+          <v-combobox v-show="$store.state.selectedProducts.length > 0" inset multiple v-model="batchCategory"
+            :items="$store.state.categories" label="Kategorie Zuweisen" outlined item-text="name" item-value="value"
+            style="margin-top: 10px; margin-bottom: -20px" dark color="warning">
+          </v-combobox>
+        </v-col>
+
+        <v-col v-show="$store.state.selectedProducts.length > 0" cols="2">
+          <v-btn @click="BatchUpdateProducts()" :loading="batchLoading" x-large
+            style="margin-top: 10px; margin-bottom: -20px" dark color="primary">Produkte aktualiseren</v-btn>
+        </v-col>
+
+        <v-col cols="2">
+          <v-combobox inset v-model="status" :items="showDraftOnly" @change="searchName()" label="Zeige" outlined
+            item-text="name" item-value="value" style="margin-top: 10px; margin-bottom: -20px" dark color="warning">
+          </v-combobox>
         </v-col>
       </v-row>
     </div>
-    <v-data-table
-      dark
-      v-model="$store.state.selectedProducts"
-      show-select
-      :headers="headers"
-      :items="$store.state.products"
-      item-key="id"
-      class="elevation-1 glass"
-      :loading="dataLoading"
-    >
+    <v-data-table dark v-model="$store.state.selectedProducts" show-select :headers="headers"
+      :items="$store.state.products" item-key="id" class="elevation-1 glass" :loading="dataLoading">
       <template v-slot:top>
         <v-toolbar flat class="glass border-rounded my-3">
           <v-toolbar-title>Suche</v-toolbar-title>
           <v-divider class="mx-4" inset vertical></v-divider>
-          <v-text-field
-            style="margin: 0; height: 56px"
-            dark
-            class="cols-2"
-            outlined
-            label="Suche"
-            @change="searchName()"
-            v-model="suche"
-          >
+          <v-text-field style="margin: 0; height: 56px" dark class="cols-2" outlined label="Suche"
+            @change="searchName()" v-model="suche">
           </v-text-field>
           <!-- <v-combobox
             dark
@@ -73,96 +60,42 @@
           <v-spacer></v-spacer>
           <v-dialog v-model="dialog">
             <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                color="secondary"
-                dark
-                class="mb-2"
-                v-bind="attrs"
-                v-on="on"
-                @click="checkForSaved()"
-              >
+              <v-btn color="secondary" dark class="mb-2" v-bind="attrs" v-on="on">
                 Neues Produkt
               </v-btn>
             </template>
             <v-card class="glass2">
               <v-card-title>
-                <v-badge
-                  tile
-                  bottom
-                  inline
-                  color="success"
-                  :content="TranslateType(editedItem.type)"
-                >
+                <v-badge tile bottom inline color="success" :content="TranslateType(editedItem.type)">
                   <span class="text-h5">{{ formTitle }}</span>
                 </v-badge>
               </v-card-title>
 
               <v-card-text>
-                <v-container @input="saveCurrentProduct()">
+                <v-container>
                   <v-row>
                     <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        dark
-                        v-model="editedItem.name"
-                        label="Produkt Name"
-                      ></v-text-field>
+                      <v-text-field dark v-model="editedItem.name" label="Produkt Name"></v-text-field>
                     </v-col>
                     <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        dark
-                        type="number"
-                        v-model="editedItem.ean_code"
-                        label="EAN"
-                      ></v-text-field>
+                      <v-text-field dark type="number" v-model="editedItem.ean_code" label="EAN"></v-text-field>
                     </v-col>
                     <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        dark
-                        type="number"
-                        v-model="editedItem.stock_quantity"
-                        label="Bestand"
-                      ></v-text-field>
+                      <v-text-field dark type="number" v-model="editedItem.stock_quantity" label="Bestand">
+                      </v-text-field>
                     </v-col>
                     <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        dark
-                        class="mt-7"
-                        v-model="editedItem.sku"
-                        label="Artikelnummer"
-                      ></v-text-field>
+                      <v-text-field dark class="mt-7" v-model="editedItem.sku" label="Artikelnummer"></v-text-field>
                     </v-col>
                     <v-col cols="12" sm="4" md="4">
-                      <v-combobox
-                        dark
-                        class="my-5"
-                        v-model="editedItem.categories"
-                        :items="category"
-                        item-text="name"
-                        item-id="id"
-                        item-value="slug"
-                        divider="true"
-                        label="Kategorie"
-                        multiple
-                        chips
-                        deletable-chips
-                      >
+                      <v-combobox dark class="my-5" v-model="editedItem.categories" :items="category" item-text="name"
+                        item-id="id" item-value="slug" divider="true" label="Kategorie" multiple chips deletable-chips>
                       </v-combobox>
                     </v-col>
                     <v-col cols="12" sm="4" md="4">
-                      <v-combobox
-                        dark
-                        class="my-5"
-                        v-model="editedItem.tags"
-                        :items="tags"
-                        item-text="name"
-                        item-id="id"
-                        item-value="slug"
-                        divider="true"
-                        label="Schlagwörter"
-                        multiple
-                        chips
-                        deletable-chips
-                      >
+                      <v-combobox dark class="my-5" v-model="editedItem.tags" :items="tags" item-text="name"
+                        item-id="id" item-value="slug" divider="true" label="Schlagwörter" multiple chips
+                        deletable-chips>
                       </v-combobox>
                     </v-col>
                     <v-col cols="12" sm="4" md="4">
@@ -188,63 +121,35 @@
                       </v-radio-group>
                     </v-col>
                     <v-col cols="12" sm="4" md="4">
-                      <v-text-field
-                        dark
-                        type="number"
-                        class="my-5"
-                        v-model="editedItem.regular_price"
-                        label="Preis (€)"
-                      >
+                      <v-text-field dark type="number" class="my-5" v-model="editedItem.regular_price"
+                        label="Preis (€)">
                       </v-text-field>
                     </v-col>
                     <v-col cols="12" sm="4" md="4"> </v-col>
                     <v-row style="margin: 0px 20px" cols="12" sm="12" md="12">
                       <v-col cols="12" sm="4" md="4">
-                        <v-btn
-                          color="accent darken-1"
-                          class="mt-4"
-                          @click="imgPopup = true"
-                          ><v-icon>mdi-upload</v-icon> Bild auswählen</v-btn
-                        >
+                        <v-btn color="accent darken-1" class="mt-4" @click="imgPopup = true">
+                          <v-icon>mdi-upload</v-icon> Bild auswählen
+                        </v-btn>
                       </v-col>
-                      <div
-                        v-for="image in editedItem.images"
-                        :key="image.id"
-                        style="position: relative"
-                      >
-                        <v-btn
-                          @click="
-                            RemovefromImageArray(
-                              editedItem.images.indexOf(image)
-                            )
-                          "
-                          style="
+                      <div v-for="image in editedItem.images" :key="image.id" style="position: relative">
+                        <v-btn @click="
+                          RemovefromImageArray(
+                            editedItem.images.indexOf(image)
+                          )
+                        " style="
                             position: absolute;
                             bottom: 10px;
                             left: 10px;
                             z-index: 99;
-                          "
-                          color="secondary"
-                          fab
-                          x-small
-                          dark
-                        >
+                          " color="secondary" fab x-small dark>
                           <v-icon>mdi-delete</v-icon>
                         </v-btn>
-                        <v-img
-                          max-width="100px"
-                          max-height="100px"
-                          style="margin: 2px"
-                          :src="image"
-                        />
+                        <v-img max-width="100px" max-height="100px" style="margin: 2px" :src="image" />
                       </div>
                     </v-row>
                     <v-col cols="12" sm="12" md="12">
-                      <v-textarea
-                        dark
-                        label="Beschreibung"
-                        v-model="editedItem.description"
-                      ></v-textarea>
+                      <v-textarea dark label="Beschreibung" v-model="editedItem.description"></v-textarea>
                     </v-col>
                   </v-row>
                 </v-container>
@@ -260,46 +165,25 @@
                     <v-expansion-panel-content>
                       <v-row>
                         <v-col cols="4">
-                          <v-text-field
-                            dark
-                            v-model="editedItem.sale_price"
-                            label="Preis (€)"
-                          ></v-text-field>
+                          <v-text-field dark v-model="editedItem.sale_price" label="Preis (€)"></v-text-field>
                         </v-col>
                         <v-col cols="4">
-                          <v-date-picker
-                            v-model="editedItem.date_on_sale_from"
-                            label="Startdatum"
-                            dark
-                          ></v-date-picker>
+                          <v-date-picker v-model="editedItem.date_on_sale_from" label="Startdatum" dark></v-date-picker>
                         </v-col>
                         <v-col cols="4">
                           <!-- sale start date -->
-                          <v-date-picker
-                            v-model="editedItem.date_on_sale_to"
-                            label="Startdatum"
-                            dark
-                          ></v-date-picker>
+                          <v-date-picker v-model="editedItem.date_on_sale_to" label="Startdatum" dark></v-date-picker>
                         </v-col>
                       </v-row>
                     </v-expansion-panel-content>
                   </v-expansion-panel>
 
-                  <h2
-                    style="color: #fff; text-align: left"
-                    class="my-3"
-                    v-show="editedItem.type === 'variable'"
-                  >
+                  <h2 style="color: #fff; text-align: left" class="my-3" v-show="editedItem.type === 'variable'">
                     Variationen (In Arbeit)
                   </h2>
                   <!-- Variables Produkt -->
-                  <v-expansion-panel
-                    v-show="editedItem.type === 'variable'"
-                    v-for="variation in editedItem.variations"
-                    :key="variation.id"
-                    dark
-                    class="glass2"
-                  >
+                  <v-expansion-panel v-show="editedItem.type === 'variable'" v-for="variation in editedItem.variations"
+                    :key="variation.id" dark class="glass2">
                     <v-expansion-panel-header>
                       <span>
                         <v-icon>mdi-label</v-icon>
@@ -310,12 +194,8 @@
                     <v-expansion-panel-content>
                       <v-row>
                         <v-col cols="4">
-                          <v-text-field
-                            dark
-                            v-model="variation.regular_price"
-                            disabled
-                            label="Preis (€)"
-                          ></v-text-field>
+                          <v-text-field dark v-model="variation.regular_price" disabled label="Preis (€)">
+                          </v-text-field>
                         </v-col>
                       </v-row>
                     </v-expansion-panel-content>
@@ -324,14 +204,10 @@
               </v-card-text>
 
               <v-card-actions>
+                <a v-show="editedItem.status == 'publish'" style="color: #fff; text-decoration: none;" :href="editedItem.permalink" target="_blank">Vorschau</a>
                 <v-spacer></v-spacer>
                 <v-btn color="primary" text @click="close"> Schließen </v-btn>
-                <v-btn
-                  :loading="btnLoading || imgLoading"
-                  :color="btnColor"
-                  text
-                  @click="save"
-                >
+                <v-btn :loading="btnLoading || imgLoading" :color="btnColor" text @click="save">
                   {{ btnText }}
                 </v-btn>
               </v-card-actions>
@@ -341,22 +217,12 @@
           <v-dialog v-model="dialogDelete" max-width="500px">
             <v-card dark class="glass2">
               <v-card-title class="text-h5">Artikel Löschen ?</v-card-title>
-              <v-card-text
-                >Sind Sie sich sicher das sie "{{ editedItem.name }}" löschen
-                wollen ?</v-card-text
-              >
+              <v-card-text>Sind Sie sich sicher das sie "{{ editedItem.name }}" löschen
+                wollen ?</v-card-text>
               <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="closeDelete"
-                  >Abbrechen</v-btn
-                >
-                <v-btn
-                  color="red outlined"
-                  :loading="dialogLoading"
-                  text
-                  @click="deleteItemConfirm"
-                  >Ja löschen</v-btn
-                >
+                <v-btn color="blue darken-1" text @click="closeDelete">Abbrechen</v-btn>
+                <v-btn color="red outlined" :loading="dialogLoading" text @click="deleteItemConfirm">Ja löschen</v-btn>
                 <v-spacer></v-spacer>
               </v-card-actions>
             </v-card>
@@ -365,22 +231,13 @@
           <v-dialog v-model="duplicationDialog" max-width="500px">
             <v-card dark class="glass2">
               <v-card-title class="text-h5">Artikel Duplizieren ?</v-card-title>
-              <v-card-text
-                >Sind Sie sich sicher das sie "{{ editedItem.name }}"
-                Duplizieren wollen ?</v-card-text
-              >
+              <v-card-text>Sind Sie sich sicher das sie "{{ editedItem.name }}"
+                Duplizieren wollen ?</v-card-text>
               <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="closeDuplication"
-                  >Abbrechen</v-btn
-                >
-                <v-btn
-                  color="green outlined"
-                  :loading="dialogLoading"
-                  text
-                  @click="duplicateItemConfirm"
-                  >Ja Duplizieren</v-btn
-                >
+                <v-btn color="blue darken-1" text @click="closeDuplication">Abbrechen</v-btn>
+                <v-btn color="green outlined" :loading="dialogLoading" text @click="duplicateItemConfirm">Ja Duplizieren
+                </v-btn>
                 <v-spacer></v-spacer>
               </v-card-actions>
             </v-card>
@@ -389,25 +246,15 @@
       </template>
       <template v-slot:item.image="{ item }">
         <div class="p-2">
-          <v-img
-            :src="
-              item.images[0].src
-                ? item.images[0].src
-                : 'https://bindis-schaulaedle.de/wp-content/uploads/woocommerce-placeholder.png'
-            "
-            :alt="item.src"
-            height="75px"
-            width="75px"
-          ></v-img>
+          <v-img :src="
+            item.images[0].src
+              ? item.images[0].src
+              : 'https://bindis-schaulaedle.de/wp-content/uploads/woocommerce-placeholder.png'
+          " :alt="item.src" height="75px" width="75px"></v-img>
         </div>
       </template>
       <template v-slot:item.badge="{ item }">
-        <v-chip
-          class="ma-2"
-          :color="TranslateStatus(item.status).color"
-          label
-          text-color="white"
-        >
+        <v-chip class="ma-2" :color="TranslateStatus(item.status).color" label text-color="white">
           <v-icon left>
             {{ TranslateStatus(item.status).icon }}
           </v-icon>
@@ -462,7 +309,10 @@ export default {
   data: () => ({
     showDraft: false,
     imgPopup: false,
+    batchLoading: false,
     status: "",
+    batchStatus: "",
+    batchCategory: [],
     showDraftOnly: [
       {
         name: "Entwurf",
@@ -593,6 +443,28 @@ export default {
   },
 
   methods: {
+    BatchUpdateProducts() {
+      this.batchLoading = true;
+      let products = this.$store.state.selectedProducts;
+      let status = this.batchStatus != "" ? this.batchStatus.value : "";
+      let batchCategories = this.batchCategory;
+
+      products.forEach((product) => {
+        //if product has no category, add the batch
+        if (product.categories == null || product.categories == []) {
+          product.categories = batchCategories;
+        } else {
+          //if product has category, add the batch to the array
+          product.categories.push(...batchCategories);
+        }
+        if (status != "") {
+          product.status = status;
+        }
+        product.updateProduct(product);
+      });
+      this.batchLoading = false;
+    },
+
     saveCurrentProduct() {
       let item = this.editedItem
       localStorage.setItem('backupProduct', item);
@@ -600,7 +472,7 @@ export default {
 
     checkForSaved() {
       console.log("Test")
-      if(this.editedIndex === -1) {
+      if (this.editedIndex === -1) {
         this.editedItem = localStorage.getItem('backupProduct')
       }
     },
@@ -614,12 +486,14 @@ export default {
               "shopURL"
             )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
               "ck"
-            )}&consumer_secret=${localStorage.getItem("cs")}&search=${
-              this.suche
+            )}&consumer_secret=${localStorage.getItem("cs")}&search=${this.suche
             }`
           )
           .then((response) => {
-            this.$store.state.products = response.data;
+            this.$store.state.products = [];
+            for (let i = 0; i < response.data.length; i++) {
+              this.$store.state.products.unshift(new productClass(response.data[i]));
+            }
             this.dataLoading = false;
           })
           .catch((e) => {
@@ -634,8 +508,7 @@ export default {
               "shopURL"
             )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
               "ck"
-            )}&consumer_secret=${localStorage.getItem("cs")}&search=${
-              this.suche
+            )}&consumer_secret=${localStorage.getItem("cs")}&search=${this.suche
             }&status=${this.status.value}`
           )
           .then((response) => {
@@ -651,9 +524,6 @@ export default {
     },
 
     init() {
-      this.$store.state.products.sort((a, b) => {
-        return new Date(b.date_modified) - new Date(a.date_modified);
-      });
       this.category = this.$store.state.categories;
       this.tags = this.$store.state.tags;
     },
@@ -824,8 +694,7 @@ export default {
       }
       axios
         .delete(
-          `${localStorage.getItem("shopURL")}/wp-json/wc/v3/products/${
-            this.editedItem.id
+          `${localStorage.getItem("shopURL")}/wp-json/wc/v3/products/${this.editedItem.id
           }?consumer_key=${localStorage.getItem(
             "ck"
           )}&consumer_secret=${localStorage.getItem("cs")}`
@@ -945,7 +814,7 @@ export default {
 
     let ean_code = params.ean_code;
     let stock_quantity = params.stock_quantity;
-    
+
     if (ean_code && stock_quantity) {
       this.editedItem.ean_code = ean_code;
       this.editedItem.stock_quantity = stock_quantity;
@@ -966,18 +835,22 @@ table {
   border-radius: 10px;
   border: 1px solid #c0c0c0;
 }
+
 th {
   font-weight: bold;
   background-color: #efefef;
   padding: 10px 20px;
 }
+
 td {
   padding: 10px 20px;
 }
+
 .red {
   background-color: rgb(224, 43, 43);
   color: white;
 }
+
 .loading {
   background-color: #35353560;
   position: fixed;

@@ -19,97 +19,61 @@
     <h1 style="margin: 20px 0">Barcodescanner</h1>
     <v-row class="h-full">
       <v-col cols="10">
-        <v-data-table
-          dark
-          :headers="headers"
-          :items="$store.state.scans"
-          :items-per-page="itemsPerPage"
-          :loading="loading"
-          loading-text="Daten werden geaden"
-          class="elevation-1 glass"
-        >
+        <v-data-table dark :headers="headers" :items="$store.state.scans" :items-per-page="itemsPerPage"
+          :loading="loading" loading-text="Daten werden geaden" class="elevation-1 glass">
           <template v-slot:top>
             <div class="col" style="position: relative">
-              <v-text-field
-                id="EANScanner"
-                v-model="searchParam"
-                label="Suche"
-                color="success"
-                class="mt-2"
-                @input="onScan"
-                :error="fieldSelected"
-                outlined
-              ></v-text-field>
+              <v-text-field id="EANScanner" v-model="searchParam" label="Suche" color="success" class="mt-2"
+                @input="onScan" :error="fieldSelected" outlined></v-text-field>
               <span style="position: absolute; top: 80px; color: #ff5252">{{
-                fieldhint
+                  fieldhint
               }}</span>
             </div>
-            <div
-              style="
+            <div style="
                 position: relative;
                 display: flex;
                 height: 50px;
                 align-items: center;
-              "
-            >
-              <v-chip
-                v-show="searchEANText != ''"
-                class="glass"
-                color="green"
-                >{{ searchEANText }}</v-chip
-              >
+              ">
+              <v-chip v-show="searchEANText != ''" class="glass" color="green">{{ searchEANText }}</v-chip>
             </div>
           </template>
         </v-data-table>
       </v-col>
-      <v-col
-        cols="2"
-        style="
+      <v-col cols="2" style="
           position: relative;
           display: flex;
           flex-direction: column;
           background-color: #efefef;
           text-align: center;
           color: #353535;
-        "
-      >
+        ">
         <h2>Verkauf</h2>
         <hr />
         <div style="overflow-y: scroll; height: 100%">
-          <div
-            style="
+          <div style="
               display: flex;
               justify-content: space-between;
               font-family: monospace;
-            "
-            v-for="(item, i) in $store.state.foundScans"
-            :key="i"
-          >
-            <span
-              style="
+            " v-for="(item, i) in $store.state.foundScans" :key="i">
+            <span style="
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 max-width: 200px;
                 overflow: hidden;
-              "
-              >{{ item.product.name }}</span
-            >
+              ">{{ item.product.name }}</span>
             <span>{{ item.product.regular_price }}</span>
           </div>
         </div>
-        <div
-          style="
+        <div style="
             position: absolute;
             bottom: 10px;
             width: 90%;
             z-index: 10;
             background-color: #efefef;
-          "
-        >
+          ">
           <hr />
-          <span style="font-family: monospace"
-            >Gesamt: {{ countPrices.toFixed(2) }}€</span
-          >
+          <span style="font-family: monospace">Gesamt: {{ countPrices.toFixed(2) }}€</span>
         </div>
       </v-col>
     </v-row>
@@ -119,7 +83,6 @@
 <script>
 import axios from "axios";
 import Scan from "../classes/scanClass";
-import Product from "../classes/productClass";
 
 export default {
   data: () => {
@@ -192,20 +155,27 @@ export default {
             "shopURL"
           )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
             "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}&search=${this.suche}`
+          )}&consumer_secret=${localStorage.getItem("cs")}&search=${Search}`
         )
         .then((response) => {
-          if (response.data != []) {
+          console.log(response.data)
+          if (response.data.length == 0) {
             this.searchEANText = "Produkt nicht gefunden";
             let scan = new Scan(
               Search,
               "nicht gefunden",
-              new Product(response.data)
             );
             scan.addScan();
-          } else {
+          } else if(response.data.length > 0) {
             this.searchEANText = "Produkt gefunden";
-            let scan = new Scan(Search, "gefunden", new Product(response.data));
+            let currentProduct = this.$store.state.products.find(
+              product => {
+                if (product.id == response.data[0].id) {
+                  return product;
+                }
+              }
+            );
+            let scan = new Scan(Search, "gefunden", currentProduct);
             this.$store.state.foundScans.unshift(scan);
             scan.reductProductStock();
           }
@@ -227,8 +197,8 @@ export default {
       let newStock = stock_quantity - 1;
       axios.post(
         "https://bindis-schaulaedle.de/wp-json/wc/v3/products/" +
-          id +
-          "?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc",
+        id +
+        "?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc",
         {
           stock_quantity: newStock,
         }
@@ -242,8 +212,8 @@ export default {
       axios
         .get(
           "https://bindis-schaulaedle.de/wp-json/wc/v3/products/" +
-            ID +
-            "?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc"
+          ID +
+          "?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc"
         )
         .then((response) => {
           let res = response.data.stock_quantity;
@@ -251,8 +221,8 @@ export default {
           axios
             .post(
               "https://bindis-schaulaedle.de/wp-json/wc/v3/products/" +
-                ID +
-                "?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc",
+              ID +
+              "?consumer_key=ck_04911d593cc006c24c8acbe6ebc4b1e55af6ae33&consumer_secret=cs_9b1bd2702eb5fc89f5b55d40fa8dafe622c2bddc",
               {
                 stock_quantity: NewStock,
               }
