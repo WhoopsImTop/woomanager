@@ -1,6 +1,6 @@
 <template>
   <v-app dark>
-    <v-dialog persistent max-width="500" v-model="productLoading">
+    <v-dialog persistent max-width="500" v-model="loading">
       <v-card dark class="glass2">
         <v-card-title> Produkte werden geladen </v-card-title>
         <v-divider class="mb-7"></v-divider>
@@ -127,7 +127,7 @@
 
         <v-list style="background-color: unset !important">
           <v-list-item v-show="eingestempelt">
-            <v-list-item-title class="text-center">{{ this.$store.state.timeTracking.time ? this.$store.state.timeTracking.getCurrentTimeRecording() : "00:00:00" }}</v-list-item-title>
+            <v-list-item-title class="text-center"> </v-list-item-title>
           </v-list-item>
 
           <v-list-item v-show="!eingestempelt">
@@ -477,9 +477,6 @@ export default {
     };
   },
   computed: {
-    productLoading() {
-      return this.loading && localStorage.getItem('ck') ? true : false;
-    },
     workTimeActive() {
       let index = this.links.findIndex((link) => link.name == "Arbeitszeit");
       return this.links[index].active;
@@ -499,10 +496,9 @@ export default {
       this.eingestempelt = true;
       this.$store.state.timeTracking.startTimer();
     },
-    async checkOut() {
+    checkOut() {
       this.eingestempelt = false;
-      await this.$store.state.timeTracking.stopTimer();
-      await this.$store.state.timeTracking.saveTime();
+      this.$store.state.timeTracking.stopTimer();
     },
     RemoveLastEditedList() {
       try {
