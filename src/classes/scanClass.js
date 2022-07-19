@@ -2,53 +2,51 @@ import axios from "axios";
 import store from "../store";
 
 export default class ScanClass {
-    constructor(ean, status, product) {
+    constructor(ean) {
         this.ean = ean;
         this.timestamp = new Date().toLocaleTimeString("de-DE");
-        this.status = status;
+        this.status = "";
         this.todoID = null;
         this.Anzahl = 1;
-        this.product = product;
     }
 
-    reductProductStock() {
-        this.product.stock_quantity = this.product.stock_quantity - 1;
-        this.product.updateProduct(this.product);
-    }
-
-    addProductStock() {
-        this.product.stock_quantity = this.product.stock_quantity + 1;
-        this.product.updateProduct(this.product);
-    }
-
-    addScan() {
-        store.state.scans.unshift(this);
-        try {
-            store.state.socket.emit("addTodo", {
-                EAN: this.ean,
-                Status: this.status,
-            });
-        } catch (error) {
-            let backupScanArray = JSON.parse(localStorage.getItem("backupScanArray")) ?
-                JSON.parse(localStorage.getItem("backupScanArray")) :
-                [];
-            backupScanArray.push(this);
-            localStorage.setItem("backupScanArray", JSON.stringify(backupScanArray));
-        }
+    checkProductsforEan() {
+        return new Promise((resolve, reject) => {
+            const product = store.state.products.find(
+                (product) => product.ean_code == this.ean
+            );
+            console.log(product);
+            try {
+                if (product && product.ean_code.length > 2) {
+                    product.stock_quantity = product.stock_quantity - 1;
+                    product.updateProduct(product);
+                    this.status = "gefunden";
+                    store.state.foundScans.unshift(product);
+                    store.state.scans.unshift(this);
+                    resolve(this);
+                } else {
+                    this.status = "nicht gefunden";
+                    this.uploadFailedEAN();
+                    store.state.foundScans.unshift(this);
+                    store.state.scans.unshift(this);
+                    resolve(this);
+                }
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
 
     updateProduct(product) {
         return new Promise((resolve, reject) => {
-            axios
-                .put(
+            axios.put(
                     `${localStorage.getItem("shopURL")}/wp-json/wc/v3/products/${
-            product.id
-          }?consumer_key=${localStorage.getItem(
-            "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}`,
-
-                    product
-                )
+          product.id
+        }?consumer_key=${localStorage.getItem(
+          "ck"
+        )}&consumer_secret=${localStorage.getItem("cs")}`
+                ),
+                product
                 .then((response) => {
                     resolve(response);
                 })
@@ -64,6 +62,7 @@ export default class ScanClass {
             Status: this.status,
         });
     }
+
 
     deleteScan() {
         if (this.status === "nicht gefunden") {
