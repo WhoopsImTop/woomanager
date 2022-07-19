@@ -7,6 +7,13 @@ export default class TimeRecording {
     this.endTime = null
     this.user = localStorage.getItem('Username')
     this.timeInterval = null
+    window.addEventListener('beforeunload', () => {
+      if (this.time < 380) {
+        this.endTime = new Date().toLocaleTimeString('de-DE')
+        this.time = this.endTime - this.startTime
+        this.saveTime()
+      }
+    })
   }
 
   startTimer() {

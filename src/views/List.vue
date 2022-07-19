@@ -1,11 +1,11 @@
 <template>
   <div>
     <imageEditorPopup
-                    @closeImagePopup="imgPopup = false"
-                    :imagePopup="imgPopup"
-                    :loading="imgLoading"
-                    @croppedImage="UploadImage($event)"
-                  />
+      @closeImagePopup="imgPopup = false"
+      :imagePopup="imgPopup"
+      :loading="imgLoading"
+      @croppedImage="UploadImage($event)"
+    />
     <v-dialog v-model="lastEditedPopup" max-width="500px">
       <v-card class="glass2" dark>
         <v-card-title>Zuletzt Bearbeitet</v-card-title>
@@ -55,36 +55,36 @@
     </v-dialog>
 
     <v-dialog v-model="dialog">
-      <v-card class="glass2" dark>
-        <v-card-title>
-          <span class="text-h5">Produkt Erstellen</span>
-        </v-card-title>
+      <v-card class="glass2">
+        <v-card-title> Produkt erstellen </v-card-title>
 
         <v-card-text>
           <v-container>
             <v-row>
               <v-col cols="12" sm="6" md="4">
                 <v-text-field
-                  id="name"
+                  dark
                   v-model="editedItem.name"
                   label="Produkt Name"
                 ></v-text-field>
               </v-col>
               <v-col cols="12" sm="6" md="4">
                 <v-text-field
+                  dark
                   v-model="editedItem.ean_code"
                   label="EAN"
                 ></v-text-field>
               </v-col>
               <v-col cols="12" sm="6" md="4">
                 <v-text-field
-                  type="number"
+                  dark
                   v-model="editedItem.stock_quantity"
                   label="Bestand"
                 ></v-text-field>
               </v-col>
               <v-col cols="12" sm="6" md="4">
                 <v-text-field
+                  dark
                   class="mt-7"
                   v-model="editedItem.sku"
                   label="Artikelnummer"
@@ -92,6 +92,7 @@
               </v-col>
               <v-col cols="12" sm="4" md="4">
                 <v-combobox
+                  dark
                   class="my-5"
                   v-model="editedItem.categories"
                   :items="category"
@@ -108,6 +109,7 @@
               </v-col>
               <v-col cols="12" sm="4" md="4">
                 <v-combobox
+                  dark
                   class="my-5"
                   v-model="editedItem.tags"
                   :items="tags"
@@ -124,18 +126,18 @@
               </v-col>
               <v-col cols="12" sm="4" md="4">
                 <v-combobox
+                  dark
                   class="my-5"
-                  v-model="status"
+                  v-model="editedItem.status"
                   :items="statusItems"
-                  item-text="name"
-                  item-value="value"
+                  @change="editedItem.TranslateStatus(newStatus)"
                   label="Status"
                 >
                 </v-combobox>
               </v-col>
               <v-col cols="12" sm="4" md="4">
                 <v-text-field
-                  id="price"
+                  dark
                   class="my-5"
                   v-model="editedItem.regular_price"
                   label="Preis (€)"
@@ -145,17 +147,16 @@
               <v-col cols="12" sm="4" md="4"> </v-col>
               <v-row style="margin: 0px 20px" cols="12" sm="12" md="12">
                 <v-col cols="12" sm="4" md="4">
-                  
                   <v-btn
                     color="accent darken-1"
                     class="mt-4"
                     @click="imgPopup = true"
-                    ><v-icon>mdi-upload</v-icon> Bild auswählen
-                  </v-btn>
+                    ><v-icon>mdi-upload</v-icon> Bild auswählen</v-btn
+                  >
                 </v-col>
                 <div
                   v-for="image in editedItem.images"
-                  :key="image"
+                  :key="image.id"
                   style="position: relative"
                 >
                   <v-btn
@@ -185,17 +186,91 @@
               </v-row>
               <v-col cols="12" sm="12" md="12">
                 <v-textarea
+                  dark
                   label="Beschreibung"
                   v-model="editedItem.description"
                 ></v-textarea>
               </v-col>
             </v-row>
           </v-container>
+
+          <v-expansion-panels dark>
+            <v-expansion-panel dark class="glass2">
+              <v-expansion-panel-header>
+                <span>
+                  <v-icon>mdi-sale</v-icon>
+                  Angebot erstellen
+                </span>
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <v-row>
+                  <v-col cols="4">
+                    <v-text-field
+                      dark
+                      v-model="editedItem.sale_price"
+                      label="Preis (€)"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-date-picker
+                      v-model="editedItem.date_on_sale_from"
+                      label="Startdatum"
+                      dark
+                    ></v-date-picker>
+                  </v-col>
+                  <v-col cols="4">
+                    <!-- sale start date -->
+                    <v-date-picker
+                      v-model="editedItem.date_on_sale_to"
+                      label="Startdatum"
+                      dark
+                    ></v-date-picker>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+
+            <h2
+              style="color: #fff; text-align: left"
+              class="my-3"
+              v-show="editedItem.type === 'variable'"
+            >
+              Variationen (In Arbeit)
+            </h2>
+            <!-- Variables Produkt -->
+            <v-expansion-panel
+              v-show="editedItem.type === 'variable'"
+              v-for="variation in editedItem.variations"
+              :key="variation.id"
+              dark
+              class="glass2"
+            >
+              <v-expansion-panel-header>
+                <span>
+                  <v-icon>mdi-label</v-icon>
+                  {{ variation.attributes[0].name }}:
+                  {{ variation.attributes[0].option }}
+                </span>
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <v-row>
+                  <v-col cols="4">
+                    <v-text-field
+                      dark
+                      v-model="variation.regular_price"
+                      disabled
+                      label="Preis (€)"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
         </v-card-text>
 
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="close"> Schließen </v-btn>
+          <v-btn color="primary" text @click="close"> Schließen </v-btn>
           <v-btn
             :loading="btnLoading || imgLoading"
             :color="btnColor"
@@ -359,17 +434,30 @@
         </v-toolbar>
       </template>
       <template v-slot:item.actions="{ item }">
-        <v-icon small class="mr-2" @click="modelDialog(item)">
-          mdi-package-variant-closed
-        </v-icon>
+        <div class="text-center">
+          <v-menu bottom offset-y>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn color="primary" dark v-bind="attrs" v-on="on">
+                Ich möchte
+              </v-btn>
+            </template>
 
-        <a :href="url + item.EAN" target="_blank">
-          <v-icon small class="mr-2"> mdi-barcode-scan </v-icon>
-        </a>
-        <a :href="GoogleSearch + item.EAN" target="_blank">
-          <v-icon small class="mr-2"> mdi-earth </v-icon>
-        </a>
-        <v-icon small @click="removeProduct(item)"> mdi-check </v-icon>
+            <v-list dark>
+              <v-list-item link @click="changeRoute(item)">
+                <v-list-item-title>Produkt Erstellen</v-list-item-title>
+              </v-list-item>
+              <v-list-item link :href="url + item.EAN" target="_blank">
+                <v-list-item-title>EAN nachschlagen</v-list-item-title>
+              </v-list-item>
+              <v-list-item link :href="GoogleSearch + item.EAN" target="_blank">
+                <v-list-item-title>EAN bei Google suchen</v-list-item-title>
+              </v-list-item>
+              <v-list-item link @click="removeProduct(item)">
+                <v-list-item-title>EAN Löschen</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
       </template>
     </v-data-table>
   </div>
@@ -377,6 +465,7 @@
 <script>
 import axios from "axios";
 import imageEditorPopup from "../components/imageEditorPopup.vue";
+import productClass from "../classes/productClass";
 
 export default {
   data: () => ({
@@ -473,6 +562,16 @@ export default {
     imageEditorPopup,
   },
   methods: {
+    changeRoute(item) {
+      //create queries
+      let ean = item.EAN;
+      let stock_quantity = item.Anzahl;
+
+      this.$router.push(
+        `/products?ean_code=${ean}&stock_quantity=${stock_quantity}`
+      );
+    },
+
     getLastEdited() {
       this.lastEditedPopup = true;
       axios
@@ -487,29 +586,6 @@ export default {
     addBearbeiterName() {
       localStorage.setItem("userName", this.bearbeiterName);
       this.nameDialog = false;
-    },
-    getEanData(ean) {
-      axios
-        .post("https://bindis.rezept-zettel.de/api/scrape", {
-          ean: ean,
-        })
-        .then((res) => {
-          document.getElementById("name").value = res.data.name;
-          this.editedItem.name = res.data.name;
-          document.getElementById("price").value = res.data.price
-            .split(",")
-            .join(".")
-            .split("€")
-            .join("");
-          this.editedItem.regular_price = res.data.price
-            .split(",")
-            .join(".")
-            .split("€")
-            .join("");
-        })
-        .catch((err) => {
-          console.log(err);
-        });
     },
     Search(suche) {
       if (suche.length > 0) {
@@ -571,7 +647,7 @@ export default {
           });
           this.imgPopup = false;
           this.imgLoading = false;
-          data = null
+          data = null;
         })
         .catch((err) => {
           console.log("AXIOS ERROR: ", err);
@@ -590,7 +666,6 @@ export default {
 
     modelDialog(item) {
       this.dialog = true;
-      this.getEanData(item.EAN);
       this.editedItem.ean_code = item.EAN;
       this.editedItem.stock_quantity = item.Anzahl;
     },
@@ -722,6 +797,21 @@ export default {
                   .catch((e) => {
                     console.log(e);
                   });
+                if (current.Status == "nicht gefunden") {
+                  const product = this.$store.state.products.find(
+                    (x) => x.ean_code == current.EAN
+                  );
+                  product.stock_quantity =
+                    product.stock_quantity - current.Anzahl;
+                  product.updateProduct(product);
+                } else if (current.Status == "Bitte Aufnehmen") {
+                  const product = this.$store.state.products.find(
+                    (x) => x.ean_code == current.EAN
+                  );
+                  product.stock_quantity =
+                    product.stock_quantity + current.Anzahl;
+                  product.updateProduct(product);
+                }
               }
             })
             .catch((error) => {
@@ -734,46 +824,41 @@ export default {
       }
     },
 
-    save() {
+    async save() {
       this.btnLoading = true;
+      try {
+        this.editedItem.method = "Post";
+        this.editedItem.edited_at = new Date();
+        this.editedItem.loading = false;
+        this.$store.commit("addToList", this.editedItem);
+      } catch (e) {
+        console.log(e);
+      }
       this.editedItem.meta_data.push({
         key: "_wpm_gtin_code",
         value: this.editedItem.ean_code,
       });
-      this.editedItem.status = this.status.value;
-      axios
-        .post(
-          `${localStorage.getItem(
-            "shopURL"
-          )}/wp-json/wc/v3/products/?consumer_key=${localStorage.getItem(
-            "ck"
-          )}&consumer_secret=${localStorage.getItem("cs")}`,
-          this.editedItem
-        )
-        .then((Response) => {
-          this.$store.state.products.push(Response.data);
-          this.btnLoading = false;
-          this.btnText = "Produkt erfolgreich erstellt";
-          this.btnColor = "success";
-
-          setTimeout(() => {
-            this.btnLoading = false;
-            this.btnText = "speichern";
-            this.btnColor = "blue";
-            this.close();
-          }, 2000);
-        })
-        .catch((e) => {
-          console.log(e);
-          this.btnLoading = false;
-          this.btnText = "Produkt konnte nicht erstellt werden";
-          this.btnColor = "danger";
-          setTimeout(() => {
-            this.btnText = "speichern";
-            this.btnColor = "blue";
-            this.close();
-          }, 2000);
-        });
+      let product = new productClass(this.editedItem);
+      const message = await product.createProduct();
+      if (message === "success") {
+        this.btnLoading = false;
+        this.btnText = "Produkt erfolgreich erstellt";
+        this.btnColor = "success";
+        setTimeout(() => {
+          this.btnText = "speichern";
+          this.btnColor = "blue";
+          this.close();
+        }, 2000);
+      } else {
+        this.btnLoading = false;
+        this.btnText = "Produkt konnte nicht erstellt werden";
+        this.btnColor = "danger";
+        setTimeout(() => {
+          this.btnText = "speichern";
+          this.btnColor = "blue";
+          this.close();
+        }, 2000);
+      }
     },
   },
   async created() {

@@ -10,6 +10,8 @@ export default new Vuex.Store({
         outOfStock: [],
         categories: [],
         foundScans: [],
+        sellingReport: [],
+        addList: [],
         scans: [],
         tags: [],
         loading: true,
@@ -22,6 +24,9 @@ export default new Vuex.Store({
         socket: null,
         users: [],
         timeTracking: new TimeRecording(),
+        globalLoading: false,
+        globalLoadingText: '',
+        selectedProducts: [],
     },
     mutations: {
         addToList(state, payload) {

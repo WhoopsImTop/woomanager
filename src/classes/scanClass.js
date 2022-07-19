@@ -63,6 +63,7 @@ export default class ScanClass {
         });
     }
 
+
     deleteScan() {
         if (this.status === "nicht gefunden") {
             return new Promise((resolve, reject) => {

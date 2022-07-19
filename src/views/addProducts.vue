@@ -4,76 +4,44 @@
       <v-card class="glass">
         <v-card-title>Produkt existiert</v-card-title>
         <v-card-text>
-          <v-text-field
-            outlined
-            label="Name"
-            disabled
-            dark
-            v-model="currentProduct.name"
-          ></v-text-field>
+          <v-text-field outlined label="Name" disabled dark v-model="currentProduct.name"></v-text-field>
 
-          <v-text-field
-            label="Wie viele Produkte sind gekommen?"
-            dark
-            v-model="newStock"
-          ></v-text-field>
+          <v-text-field label="Wie viele Produkte sind gekommen?" dark v-model="newStock"></v-text-field>
+
+          <v-text-field label="Preis" dark v-model="currentProduct.regular_price"></v-text-field>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn color="gray darken-1" text @click="addPopUp = false">
             Abbrechen
           </v-btn>
-          <v-btn
-            color="blue darken-1"
-            text
-            :loading="btnLoading"
-            @click="updateStock"
-          >
+          <v-btn color="blue darken-1" text :loading="btnLoading" @click="updateStock">
             Hinzufügen
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
     <h1 style="margin: 20px 0">Bitte Aufnehmen</h1>
-    <v-sheet
-      class="glass mb-3"
-      style="
+    <v-sheet class="glass mb-3" style="
         display: flex;
         flex-direction: row;
         justify-content: center;
         align-items: center;
-      "
-    >
-      <v-text-field
-        id="search"
-        class="mt-6 ml-3 mr-3"
-        dark
-        v-model="Search"
-        label="Suche"
-        outlined
-        @input="onScan"
-      ></v-text-field>
+      ">
+      <v-text-field id="search" class="mt-6 ml-3 mr-3" dark v-model="Search" label="Suche" outlined @input="onScan">
+      </v-text-field>
     </v-sheet>
-    <v-list v-if="ScannedList.length > 0" class="glass" nav dense>
+    <v-list v-if="$store.state.addList.length > 0" class="glass" nav dense>
       <v-list-item-group class="my-5" v-model="selectedItem" color="primary">
-        <v-list-item
-          dark
-          class="glass2"
-          v-for="item in ScannedList"
-          :key="item._id"
-        >
+        <v-list-item dark class="glass2" v-for="(item, index) in $store.state.addList" :key="index">
           <v-list-item-content>
             <v-row>
               <v-col>
                 <v-list-item-title v-text="item.EAN"></v-list-item-title>
-                <v-list-item-subtitle
-                  v-text="item.TimeStamp"
-                ></v-list-item-subtitle>
+                <v-list-item-subtitle v-text="item.TimeStamp"></v-list-item-subtitle>
               </v-col>
               <v-col>
-                <v-list-item-subtitle
-                  >{{ item.Anzahl }} x gescannt</v-list-item-subtitle
-                >
+                <v-list-item-subtitle>{{ item.Anzahl }} x gescannt</v-list-item-subtitle>
               </v-col>
             </v-row>
           </v-list-item-content>
@@ -89,10 +57,8 @@
       <v-card-title>Du hast bis jetzt keine Artikel gescannt</v-card-title>
       <v-divider></v-divider>
       <v-card-text>
-        <span
-          >Jetzt einfach Produkte Scannen, die du als
-          <i>"Bitte Aufnehmen"</i> speichern willst.</span
-        >
+        <span>Jetzt einfach Produkte Scannen, die du als
+          <i>"Bitte Aufnehmen"</i> speichern willst.</span>
       </v-card-text>
     </v-card>
   </div>
@@ -100,7 +66,7 @@
 
 <script>
 import axios from "axios";
-
+import Product from '../classes/productClass'
 export default {
   data: () => {
     return {
@@ -138,82 +104,59 @@ export default {
       }
     },
     handleScanSearch(EAN) {
-      if (EAN != "") {
-        try {
-          const Product = this.$store.state.products.find((item) => {
-            if (item.ean_code == EAN) {
-              return item;
-            }
-          });
-          if (Product) {
-            this.currentProduct = Product;
+      if (EAN == "" || EAN.length < 6) {
+        return;
+      }
+      axios
+        .get(
+          `${localStorage.getItem(
+            "shopURL"
+          )}/wp-json/wc/v3/products?consumer_key=${localStorage.getItem(
+            "ck"
+          )}&consumer_secret=${localStorage.getItem("cs")}&search=${EAN}`
+        )
+        .then((response) => {
+          if (response.data != []) {
+            this.currentProduct = new Product(response.data[0]);
             this.addPopUp = true;
           } else {
             this.$store.state.socket.emit("addTodo", {
               EAN: EAN,
               Status: "Bitte Aufnehmen",
             });
+            let found = this.$store.state.addList.find((item) => {
+              if (item.EAN == EAN) {
+                return item;
+              }
+            });
+            if (found) {
+              found.Anzahl++;
+            } else {
+              this.$store.state.addList.unshift({
+                EAN: EAN,
+                Status: "Bitte Aufnehmen",
+                Anzahl: 1,
+                TimeStamp: new Date().toLocaleString("de-DE"),
+              });
+            }
           }
-        } catch (error) {
-          console.log(error);
-          this.FailedScanList.push({
-            EAN: EAN,
-            Status: "Bitte Aufnehmen",
-          });
-          localStorage.setItem(
-            "FailedScanList",
-            JSON.stringify(this.FailedScanList)
-          );
-        }
-      }
+        });
     },
     async updateStock() {
       console.log(this.currentProduct);
-      this.currentProduct.stock_quantity =
-        parseInt(this.currentProduct.stock_quantity) + parseInt(this.newStock);
+      let current;
+      this.$store.state.products.find((item) => {
+        if (item.id == this.currentProduct.id) {
+          current = item;
+          return
+        }
+      })
+      current.stock_quantity =
+        parseInt(current.stock_quantity) + parseInt(this.newStock);
       this.btnLoading = true;
-      await this.currentProduct.updateProduct(this.currentProduct);
+      await current.updateProduct(current);
       this.btnLoading = false;
       this.addPopUp = false;
-    },
-    addToList(data) {
-      //check if item is already in list
-      let found = this.ScannedList.find((item) => item.EAN == data.EAN);
-      if (found == undefined) {
-        this.ScannedList.push(data);
-      } else {
-        found.Anzahl += 1;
-      }
-    },
-    reUploadItem() {
-      //upload failed scans
-      let FailedScanList = JSON.parse(localStorage.getItem("FailedScanList"));
-      if (FailedScanList) {
-        FailedScanList.forEach((item) => {
-          axios
-            .post("https://bindis.rezept-zettel.de/api/scans", {
-              EAN: item.EAN,
-              Status: "Bitte Aufnehmen",
-            })
-            .then((response) => {
-              if (response.data.includes(item.EAN)) {
-                this.addToList(response.data);
-                this.FailedScanList.splice(FailedScanList.indexOf(item), 1);
-              } else {
-                axios
-                  .get("https://bindis.rezept-zettel.de/api/scans/" + item.EAN)
-                  .then((response) => {
-                    this.addToList(response.data);
-                    this.FailedScanList.splice(FailedScanList.indexOf(item), 1);
-                  });
-              }
-            });
-        });
-      }
-      localStorage.setItem(
-        "FailedScanList",
-        JSON.stringify(this.FailedScanList)
-      );
     },
     async removeItem(id) {
       axios
@@ -226,14 +169,6 @@ export default {
   mounted() {
     document.getElementById("search").focus();
     this.FailedScanList = JSON.parse(localStorage.getItem("FailedScanList"));
-
-    this.$store.state.socket.on("addTodo", (data) => {
-      console.log(data);
-      this.addToList(data);
-      if (localStorage.getItem("FailedScanList")) {
-        this.reUploadItem();
-      }
-    });
   },
 };
 </script>

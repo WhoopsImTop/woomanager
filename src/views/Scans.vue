@@ -52,22 +52,18 @@
           </div>
         </div>
       </v-col>
-      <v-col
-        cols="2"
-        style="
+      <v-col cols="2" style="
           position: relative;
           display: flex;
           flex-direction: column;
           background-color: #efefef;
           text-align: center;
           color: #353535;
-        "
-      >
+        ">
         <h2>Verkauf</h2>
         <hr />
         <div style="overflow-y: scroll; height: 100%">
-          <div
-            style="
+          <div style="
               display: flex;
               justify-content: space-between;
               font-family: monospace;
@@ -88,15 +84,13 @@
             <span>{{ item.regular_price }}</span>
           </div>
         </div>
-        <div
-          style="
+        <div style="
             position: absolute;
             bottom: 10px;
             width: 90%;
             z-index: 10;
             background-color: #efefef;
-          "
-        >
+          ">
           <hr />
           <span style="font-family: monospace"
             >Gesamt: {{ countPrices.toFixed(2) }}€</span
